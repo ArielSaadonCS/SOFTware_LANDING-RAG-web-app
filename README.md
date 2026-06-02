@@ -60,3 +60,14 @@ During the final deployment phase, the Dockerised application was launched on an
 
 > **http://54.221.169.239:5000**
 
+
+---
+
+## AWS Resources Cleanup
+
+**EC2 provisioned for this project have been fully terminated and deleted.**
+
+Immediately after capturing the required screenshots and completing functional testing at the public IP above, the following cleanup actions were performed to prevent ongoing costs:
+
+- **EC2 Instance** — terminated via the AWS Console (`Instances → Terminate Instance`)
+
