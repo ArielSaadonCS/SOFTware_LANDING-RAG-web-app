@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TechCorp — Employee Onboarding Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+
+  <!-- Logo banner -->
+  <div class="logo-banner">
+    <p class="logo-text">
+      <span class="brand-highlight">Soft</span>ware <span class="brand-highlight">Landing</span>
+    </p>
+  </div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-logo">
+          <span class="brand-logo-text">TC<span class="brand-logo-sub">ID</span></span>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">TechCorp</span>
+          <span class="brand-subtitle">Employee Onboarding Portal</span>
+        </div>
+      </div>
+      <nav class="header-nav">
+        <span class="nav-badge">&#x1F4CB; Powered by AWS Bedrock</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="visitor-badge">
+        <span class="badge-company">TechCorp Inc.</span>
+        <span class="badge-role">&#x1F44B; New Employee</span>
+        <span class="badge-day">Day 1</span>
+      </div>
+      <h1 class="hero-title">Welcome to the Office</h1>
+      <p class="hero-subtitle">
+        Ask any question about your onboarding, HR policies, IT setup, office
+        access, or company culture — and get an instant answer sourced directly
+        from official TechCorp documentation.
+      </p>
+    </section>
+
+    <!-- Suggestion chips -->
+    <section class="suggestions">
+      <p class="suggestions-label">&#x1F4CC; Pinned topics — click to ask</p>
+      <div class="suggestion-chips">
+        <button class="chip" data-q="How do I connect to the VPN on my first day?">&#x1F512; VPN Setup</button>
+        <button class="chip" data-q="What is the vacation policy for US employees?">&#x1F334; Vacation Policy</button>
+        <button class="chip" data-q="How do I submit an expense report?">&#x1F9FE; Expense Reports</button>
+        <button class="chip" data-q="Where is the IT Help Desk located in the San Francisco office?">&#x1F5A5; IT Help Desk</button>
+        <button class="chip" data-q="How do I request new hardware or a laptop?">&#x1F4BB; Hardware Request</button>
+        <button class="chip" data-q="What is TechCorp's code of conduct?">&#x1F4D6; Code of Conduct</button>
+        <button class="chip" data-q="How do I book a meeting room?">&#x1F4C5; Book a Room</button>
+        <button class="chip" data-q="What are the fire evacuation procedures?">&#x1F6A8; Evacuation</button>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         CHAT THREAD — messages are appended here by JavaScript.
+         Starts hidden; becomes visible after the first message.
+    ============================================================ -->
+    <section id="chat-thread" class="chat-thread" hidden></section>
+
+    <!-- Ask form -->
+    <section class="ask-card">
+      <div class="ask-card-inner">
+        <h2 class="card-title">&#x270F;&#xFE0F; Ask Your HR Assistant</h2>
+        <form id="ask-form" autocomplete="off">
+          <div class="input-group">
+            <textarea
+              id="question"
+              name="question"
+              class="question-input"
+              placeholder="e.g. What is the parental leave policy in Germany?"
+              rows="3"
+              required
+            ></textarea>
+          </div>
+          <div class="form-footer">
+            <!-- New Conversation button — clears the Bedrock session on the server -->
+            <button type="button" id="new-chat-btn" class="new-chat-btn">
+              &#x1F504; New Conversation
+            </button>
+            <button type="submit" id="submit-btn" class="submit-btn">
+              <span id="btn-text">&#x1F50D; Ask Portal</span>
+              <span id="btn-spinner" class="btn-spinner" hidden></span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p>
+        &copy; 2026 TechCorp Inc. &mdash; Internal use only &nbsp;|&nbsp;
+        Questions? <a href="mailto:people-ops@techcorp.io">people-ops@techcorp.io</a>
+      </p>
+    </div>
+  </footer>
+
+  <!-- ============================================================
+       JAVASCRIPT
+       Simple, step-by-step logic — no libraries or complex state.
+  ============================================================ -->
+  <script>
+    // ---- Element references ----
+    const form          = document.getElementById("ask-form");
+    const questionInput = document.getElementById("question");
+    const submitBtn     = document.getElementById("submit-btn");
+    const btnText       = document.getElementById("btn-text");
+    const btnSpinner    = document.getElementById("btn-spinner");
+    const chatThread    = document.getElementById("chat-thread");
+    const newChatBtn    = document.getElementById("new-chat-btn");
+
+    // ---- Suggestion chips: click to fill the textarea ----
+    document.querySelectorAll(".chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        questionInput.value = chip.dataset.q;
+        questionInput.focus();
+        document.querySelector(".ask-card").scrollIntoView({ behavior: "smooth" });
+      });
+    });
+
+    // ---- Helper: escape HTML before inserting user-supplied text ----
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    // ---- Helper: convert plain text with newlines into HTML paragraphs ----
+    function textToHtml(text) {
+      return text
+        .split(/\n{2,}/)
+        .map((para) => `<p>${para.replace(/\n/g, "<br>")}</p>`)
+        .join("");
+    }
+
+    // ---- Helper: scroll the chat thread to the bottom ----
+    function scrollToBottom() {
+      chatThread.scrollTop = chatThread.scrollHeight;
+    }
+
+    // ---- Step 1: append the user's question as a right-aligned bubble ----
+    function appendUserMessage(question) {
+      chatThread.hidden = false;
+
+      const div = document.createElement("div");
+      div.className = "chat-msg chat-msg-user";
+      div.innerHTML = `<div class="chat-bubble">${escapeHtml(question)}</div>`;
+      chatThread.appendChild(div);
+      scrollToBottom();
+    }
+
+    // ---- Step 2: append an animated "typing…" bubble while waiting ----
+    function appendLoadingBubble() {
+      const div = document.createElement("div");
+      div.className = "chat-msg chat-msg-assistant";
+      div.id = "loading-bubble";
+      div.innerHTML = `
+        <div class="chat-bubble chat-bubble-loading">
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+        </div>`;
+      chatThread.appendChild(div);
+      scrollToBottom();
+    }
+
+    // ---- Step 3: remove the typing bubble once the response arrives ----
+    function removeLoadingBubble() {
+      const bubble = document.getElementById("loading-bubble");
+      if (bubble) bubble.remove();
+    }
+
+    // ---- Step 4a: append the assistant's answer as a left-aligned bubble ----
+    function appendAnswerBubble(answer, citations) {
+      // Build the citations HTML block if any sources were returned
+      let citationsHtml = "";
+      if (citations && citations.length > 0) {
+        const items = citations.map((c) => `
+          <div class="chat-citation-item">
+            <span>&#x1F4C4;</span>
+            <strong>${escapeHtml(c.source)}</strong>
+          </div>
+        `).join("");
+        citationsHtml = `<div class="chat-citations"><p class="chat-citations-label">&#x1F5C2; Sources</p>${items}</div>`;
+      }
+
+      const div = document.createElement("div");
+      div.className = "chat-msg chat-msg-assistant";
+      div.innerHTML = `
+        <div class="chat-bubble">
+          <div class="chat-answer-text">${textToHtml(answer)}</div>
+          ${citationsHtml}
+        </div>`;
+      chatThread.appendChild(div);
+      scrollToBottom();
+    }
+
+    // ---- Step 4b: append an error bubble if something went wrong ----
+    function appendErrorBubble(message) {
+      const div = document.createElement("div");
+      div.className = "chat-msg chat-msg-assistant";
+      div.innerHTML = `
+        <div class="chat-bubble chat-bubble-error">
+          &#x26A0;&#xFE0F; ${escapeHtml(message)}
+        </div>`;
+      chatThread.appendChild(div);
+      scrollToBottom();
+    }
+
+    // ---- Helper: set the submit button to busy / idle state ----
+    function setBusy(busy) {
+      submitBtn.disabled  = busy;
+      btnSpinner.hidden   = !busy;
+      btnText.textContent = busy ? "Sending…" : "🔍 Ask Portal";
+    }
+
+    // ---- New Conversation button ----
+    // Tells the server to clear the Bedrock session, then wipes the chat thread.
+    newChatBtn.addEventListener("click", async () => {
+      // Ask the server to forget the current Bedrock session ID
+      await fetch("/new-chat", { method: "POST" });
+
+      // Clear all messages from the screen
+      chatThread.innerHTML = "";
+
+      // Show a small system notice so the user knows a new session started
+      const notice = document.createElement("div");
+      notice.className = "chat-system-notice";
+      notice.textContent = "New conversation started.";
+      chatThread.appendChild(notice);
+      chatThread.hidden = false;
+    });
+
+    // ---- Main form submit handler ----
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const question = questionInput.value.trim();
+      if (!question) return;
+
+      // Clear the input box so the user can type the next question
+      questionInput.value = "";
+
+      // Show the user's question and the loading animation
+      appendUserMessage(question);
+      appendLoadingBubble();
+      setBusy(true);
+
+      try {
+        // Send the question to Flask /ask as JSON
+        const response = await fetch("/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question }),
+        });
+
+        const data = await response.json();
+
+        // Remove the loading bubble before showing the answer
+        removeLoadingBubble();
+        setBusy(false);
+
+        if (data.error) {
+          appendErrorBubble(data.error);
+        } else {
+          appendAnswerBubble(data.answer, data.citations);
+        }
+
+      } catch {
+        removeLoadingBubble();
+        setBusy(false);
+        appendErrorBubble("Could not reach the server. Make sure app.py is running on port 5001.");
+      }
+    });
+  </script>
+
+</body>
+</html>

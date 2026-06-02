@@ -1,0 +1,35 @@
+# ============================================================
+# .dockerignore — files excluded from the Docker build context
+# ============================================================
+# Keeping the build context small speeds up "docker build" and
+# prevents secrets from accidentally ending up in the image.
+
+# --- Credentials (NEVER bake into an image) ---
+.env
+*.env
+
+# --- Data files (live in S3, not needed at runtime) ---
+data/
+aws_setup.py
+
+# --- Python artifacts ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+*.egg-info/
+
+# --- Version control & IDE ---
+.git/
+.gitignore
+.claude/
+
+# --- Documentation ---
+*.md
+.env.example
+
+# --- Docker files themselves (no need to copy them into the image) ---
+Dockerfile
+.dockerignore

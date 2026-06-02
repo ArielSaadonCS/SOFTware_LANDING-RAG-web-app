@@ -1,0 +1,912 @@
+/* =============================================================
+   style.css — TechCorp Onboarding Portal
+   Theme: "First Day at the Office"
+   Warm paper backgrounds, sticky-note chips, clipboard form,
+   internal-memo answers, ID-badge branding.
+   ============================================================= */
+
+/* ---- Honour the HTML `hidden` attribute regardless of display rules ---- */
+[hidden] { display: none !important; }
+
+/* ---- Design Tokens ---- */
+:root {
+  /* Office palette */
+  --color-charcoal:      #1c2333;   /* dark wall / header */
+  --color-charcoal-deep: #12192a;   /* even darker accent */
+  --color-amber:         #c87941;   /* warm office lighting / copper */
+  --color-amber-hover:   #a8622f;
+  --color-amber-light:   #f5dfc0;
+  --color-amber-pale:    #fffbf2;
+
+  /* Success / plant green */
+  --color-green:         #2d7d6f;
+  --color-green-bg:      #edfaf7;
+  --color-green-border:  #9dd9cf;
+
+  /* Error red */
+  --color-error:         #c0392b;
+  --color-error-bg:      #fdf2f2;
+  --color-error-border:  #f5aeae;
+
+  /* Neutrals — warm cream paper tones */
+  --color-bg:            #ede8df;   /* office paper / carpet */
+  --color-surface:       #ffffff;
+  --color-border:        #d5cdc2;
+  --color-border-dark:   #b8ada0;
+
+  /* Sticky-note yellow */
+  --color-sticky:        #fff3a8;
+  --color-sticky-border: #e8d96a;
+  --color-sticky-text:   #7a5c10;
+
+  /* Text */
+  --color-text-primary:   #2c2417;
+  --color-text-secondary: #6b5d4f;
+  --color-text-muted:     #9c8e82;
+  --color-text-inverse:   #ffffff;
+
+  /* Typography */
+  --font-body:    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "DM Serif Display", Georgia, serif;
+  --font-mono:    "JetBrains Mono", "Courier New", monospace;
+
+  /* Spacing */
+  --space-1: 4px;  --space-2: 8px;   --space-3: 12px;
+  --space-4: 16px; --space-5: 20px;  --space-6: 24px;
+  --space-8: 32px; --space-10: 40px; --space-12: 48px;
+  --space-16: 64px;
+
+  /* Layout */
+  --max-width:  760px;
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-full: 9999px;
+
+  /* Shadows — paper/desk style */
+  --shadow-paper: 0 1px 4px rgba(60,40,10,0.10), 0 2px 8px rgba(60,40,10,0.06);
+  --shadow-lift:  0 4px 16px rgba(60,40,10,0.14), 0 2px 6px rgba(60,40,10,0.08);
+  --shadow-note:  2px 3px 8px rgba(60,40,10,0.18);
+
+  --transition-fast:   140ms ease;
+  --transition-normal: 240ms ease;
+}
+
+/* ---- Reset ---- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+
+/* ---- Body — warm paper with subtle dot grid ---- */
+body {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--color-text-primary);
+  background-color: var(--color-bg);
+  /* Office floor / graph-paper dot grid */
+  background-image: radial-gradient(circle, #c5bbb0 1px, transparent 1px);
+  background-size: 26px 26px;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ================================================================
+   HEADER — dark office wall with amber accent stripe
+================================================================ */
+.site-header {
+  background: linear-gradient(180deg, var(--color-charcoal-deep) 0%, var(--color-charcoal) 100%);
+  border-bottom: 4px solid var(--color-amber);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.35);
+}
+
+.header-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: var(--space-4) var(--space-6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+/* ID badge logo — white card with lanyard hole */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  text-decoration: none;
+}
+
+.brand-logo {
+  position: relative;
+  width: 44px;
+  height: 54px;
+  background: #ffffff;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  border: 1.5px solid var(--color-amber);
+}
+
+/* Lanyard hole at top of badge */
+.brand-logo::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 10px;
+  height: 10px;
+  background: var(--color-charcoal-deep);
+  border: 2px solid var(--color-amber);
+  border-radius: 50%;
+}
+
+.brand-logo-text {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--color-charcoal);
+  letter-spacing: 0.05em;
+  line-height: 1;
+  text-align: center;
+}
+
+.brand-logo-sub {
+  font-size: 0.45rem;
+  font-weight: 600;
+  color: var(--color-amber);
+  letter-spacing: 0.08em;
+  display: block;
+  text-align: center;
+  margin-top: 2px;
+  text-transform: uppercase;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.brand-name {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--color-text-inverse);
+  letter-spacing: -0.01em;
+}
+
+.brand-subtitle {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.5);
+}
+
+.nav-badge {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--color-amber-light);
+  background: rgba(200,121,65,0.2);
+  border: 1px solid rgba(200,121,65,0.45);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  letter-spacing: 0.02em;
+}
+
+/* ================================================================
+   MAIN LAYOUT
+================================================================ */
+.main-content {
+  flex: 1;
+  max-width: var(--max-width);
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--space-10) var(--space-6) var(--space-16);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* ================================================================
+   HERO — visitor badge decoration + serif welcome title
+================================================================ */
+.hero {
+  text-align: center;
+  padding: var(--space-8) 0 var(--space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+/* Visitor / day-1 badge decorative card */
+.visitor-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  background: var(--color-surface);
+  border: 2px solid var(--color-amber);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-6);
+  position: relative;
+  box-shadow: var(--shadow-lift);
+  min-width: 180px;
+}
+
+/* Lanyard clip at top */
+.visitor-badge::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 14px;
+  background: var(--color-bg);
+  border: 2px solid var(--color-amber);
+  border-radius: 50%;
+}
+
+.visitor-badge::after {
+  content: '';
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 10px;
+  background: var(--color-amber);
+}
+
+.badge-company {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--color-amber);
+  text-transform: uppercase;
+}
+
+.badge-role {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--color-charcoal);
+  letter-spacing: -0.01em;
+}
+
+.badge-day {
+  margin-top: var(--space-1);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--color-text-inverse);
+  background: var(--color-amber);
+  padding: 2px var(--space-3);
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+}
+
+.hero-title {
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  font-weight: 400;         /* DM Serif Display looks best at normal weight */
+  color: var(--color-charcoal);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.hero-subtitle {
+  font-size: 0.9375rem;
+  color: var(--color-text-secondary);
+  max-width: 520px;
+  line-height: 1.75;
+}
+
+/* ================================================================
+   STICKY-NOTE SUGGESTION CHIPS
+================================================================ */
+.suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.suggestions-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.suggestion-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: center;
+}
+
+/* Each chip looks like a sticky note */
+.chip {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-sticky-text);
+  background: var(--color-sticky);
+  border: 1px solid var(--color-sticky-border);
+  border-radius: var(--radius-sm);   /* square corners — sticky notes */
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+  box-shadow: var(--shadow-note);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  white-space: nowrap;
+}
+
+.chip:hover {
+  transform: rotate(-2deg) translateY(-3px);
+  box-shadow: 3px 5px 12px rgba(60,40,10,0.22);
+}
+
+.chip:active {
+  transform: rotate(0deg) translateY(0);
+  box-shadow: var(--shadow-note);
+}
+
+/* ================================================================
+   ASK CARD — clipboard / notepad style
+================================================================ */
+.ask-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-paper);
+  overflow: hidden;
+  /* Stack of pages below — paper stack effect */
+  position: relative;
+}
+
+/* Amber clipboard top bar */
+.ask-card::before {
+  content: '';
+  display: block;
+  height: 6px;
+  background: linear-gradient(90deg, var(--color-amber) 0%, var(--color-amber-hover) 100%);
+}
+
+.ask-card-inner {
+  padding: var(--space-6);
+}
+
+.card-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: var(--space-4);
+}
+
+.question-input {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  color: var(--color-text-primary);
+  background: #fdfaf6;   /* slightly warm off-white, like a form sheet */
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-4);
+  width: 100%;
+  resize: vertical;
+  min-height: 96px;
+  line-height: 1.65;
+  /* Subtle horizontal rules like a ruled notepad */
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent 27px,
+    #e8e0d4 27px,
+    #e8e0d4 28px
+  );
+  background-attachment: local;
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.question-input::placeholder { color: var(--color-text-muted); }
+
+.question-input:focus {
+  border-color: var(--color-amber);
+  box-shadow: 0 0 0 3px rgba(200,121,65,0.15);
+  background-color: #fffdf8;
+}
+
+.form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.form-hint {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  flex: 1;
+}
+
+/* Submit button — warm amber, like a rubber stamp */
+.submit-btn {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-text-inverse);
+  background: var(--color-amber);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-6);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+  transition: background var(--transition-fast), transform var(--transition-fast),
+              box-shadow var(--transition-fast);
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: var(--color-amber-hover);
+  box-shadow: 0 4px 14px rgba(200,121,65,0.45);
+  transform: translateY(-1px);
+}
+
+.submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.submit-btn:disabled { opacity: 0.65; cursor: not-allowed; }
+
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+/* ================================================================
+   RESPONSE SECTION
+================================================================ */
+.response-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ---- Loading state — paper-tray aesthetic ---- */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-12) var(--space-6);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-paper);
+}
+
+.loading-spinner {
+  width: 38px;
+  height: 38px;
+  border: 3px solid var(--color-amber-light);
+  border-top-color: var(--color-amber);
+  border-radius: 50%;
+  animation: spin 0.85s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-text {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+/* ---- Answer card — internal office memo ---- */
+.answer-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 5px solid var(--color-green);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-paper);
+  overflow: hidden;
+  animation: fadeSlideIn var(--transition-normal) forwards;
+}
+
+.answer-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  background: var(--color-green-bg);
+  border-bottom: 1px solid var(--color-green-border);
+}
+
+.answer-icon {
+  width: 22px;
+  height: 22px;
+  background: var(--color-green);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.answer-title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--color-green);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.answer-body {
+  padding: var(--space-6);
+  font-size: 0.9375rem;
+  color: var(--color-text-primary);
+  line-height: 1.8;
+}
+
+.answer-body p { margin-bottom: var(--space-4); }
+.answer-body p:last-child { margin-bottom: 0; }
+
+/* ---- Error card ---- */
+.error-card {
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
+  border-left: 5px solid var(--color-error);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  animation: fadeSlideIn var(--transition-normal) forwards;
+}
+
+.error-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--color-error-border);
+}
+
+.error-icon { font-size: 1.125rem; color: var(--color-error); }
+.error-title { font-size: 0.9375rem; font-weight: 600; color: var(--color-error); }
+
+.error-body {
+  padding: var(--space-5) var(--space-6);
+  font-size: 0.875rem;
+  color: var(--color-error);
+  font-family: var(--font-mono);
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+/* ---- Citations — index-card / file-tab style ---- */
+.citations-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-paper);
+  animation: fadeSlideIn var(--transition-normal) forwards;
+}
+
+/* File-cabinet tab header */
+.citations-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-inverse);
+  background: var(--color-charcoal);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: var(--space-2) var(--space-5);
+}
+
+.citations-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-4) var(--space-5);
+  gap: var(--space-3);
+}
+
+/* Each citation looks like an index card */
+.citation-item {
+  background: var(--color-amber-pale);
+  border: 1px solid var(--color-amber-light);
+  border-top: 3px solid var(--color-amber);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: 1px 2px 4px rgba(60,40,10,0.08);
+}
+
+.citation-source {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.citation-icon { font-size: 0.875rem; }
+
+.citation-source strong {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--color-charcoal);
+  font-family: var(--font-mono);
+}
+
+.citation-snippet {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  font-style: italic;
+}
+
+/* ================================================================
+   ANIMATION
+================================================================ */
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ================================================================
+   FOOTER — dark wall matching header
+================================================================ */
+.site-footer {
+  background: var(--color-charcoal);
+  border-top: 3px solid var(--color-amber);
+  margin-top: auto;
+}
+
+.footer-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-6);
+}
+
+.site-footer p {
+  font-size: 0.8125rem;
+  color: rgba(255,255,255,0.4);
+  text-align: center;
+}
+
+.site-footer a {
+  color: var(--color-amber-light);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.site-footer a:hover { color: var(--color-amber); text-decoration: underline; }
+
+/* ================================================================
+   RESPONSIVE
+================================================================ */
+@media (max-width: 640px) {
+  .main-content { padding: var(--space-8) var(--space-4) var(--space-12); }
+  .hero-title   { font-size: 1.75rem; }
+  .form-footer  { flex-direction: column; align-items: stretch; }
+  .form-hint    { display: none; }
+  .submit-btn   { width: 100%; justify-content: center; }
+  .header-inner { padding: var(--space-3) var(--space-4); }
+  .nav-badge    { display: none; }
+  .visitor-badge { min-width: unset; }
+}
+
+/* ================================================================
+   LOGO BANNER — typographic app name at the absolute top of the page
+   These three rules are self-contained and do not touch any
+   existing selector in this file.
+================================================================ */
+.logo-banner {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 20px 24px;
+  text-align: center;
+}
+
+.logo-text {
+  font-family: "Inter", sans-serif;
+  font-size: 2.75rem;
+  letter-spacing: -0.03em;
+  color: #1f2937;
+  font-weight: 400;
+  margin: 0;
+  line-height: 1;
+}
+
+.brand-highlight {
+  font-weight: 700;
+  color: #1e3a8a;   /* deep primary blue */
+}
+
+/* ================================================================
+   CHAT THREAD — continuous conversation view
+================================================================ */
+
+/* Scrollable container that holds all message bubbles */
+.chat-thread {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-paper);
+  padding: var(--space-5);
+  max-height: 520px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+/* Each message row — holds one bubble */
+.chat-msg {
+  display: flex;
+  max-width: 82%;
+}
+
+/* User messages sit on the right */
+.chat-msg-user {
+  align-self: flex-end;
+}
+
+/* Assistant messages sit on the left */
+.chat-msg-assistant {
+  align-self: flex-start;
+}
+
+/* Base bubble */
+.chat-bubble {
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-lg);
+  font-size: 0.9375rem;
+  line-height: 1.7;
+}
+
+/* User bubble — warm amber background */
+.chat-msg-user .chat-bubble {
+  background: var(--color-amber);
+  color: var(--color-text-inverse);
+  border-bottom-right-radius: var(--radius-sm);
+  box-shadow: var(--shadow-paper);
+}
+
+/* Assistant bubble — white with green left accent */
+.chat-msg-assistant .chat-bubble {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-green);
+  border-bottom-left-radius: var(--radius-sm);
+  box-shadow: var(--shadow-paper);
+}
+
+/* Paragraphs inside answer bubbles */
+.chat-answer-text p {
+  margin-bottom: var(--space-3);
+}
+.chat-answer-text p:last-child {
+  margin-bottom: 0;
+}
+
+/* Error bubble — red tint */
+.chat-bubble-error {
+  background: var(--color-error-bg) !important;
+  border-color: var(--color-error-border) !important;
+  border-left-color: var(--color-error) !important;
+  color: var(--color-error);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  white-space: pre-wrap;
+}
+
+/* Citations block inside an answer bubble */
+.chat-citations {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.chat-citations-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-1);
+}
+
+.chat-citation-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.8125rem;
+}
+
+.chat-citation-item strong {
+  font-family: var(--font-mono);
+  color: var(--color-charcoal);
+}
+
+/* Typing / loading bubble — three bouncing dots */
+.chat-bubble-loading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+}
+
+.typing-dot {
+  width: 9px;
+  height: 9px;
+  background: var(--color-amber);
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: typingBounce 1.1s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(2) { animation-delay: 0.18s; }
+.typing-dot:nth-child(3) { animation-delay: 0.36s; }
+
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0);    opacity: 0.5; }
+  30%           { transform: translateY(-7px); opacity: 1;   }
+}
+
+/* System notice ("New conversation started.") */
+.chat-system-notice {
+  align-self: center;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+  border: 1px dashed var(--color-border-dark);
+  border-radius: var(--radius-full);
+  padding: var(--space-1) var(--space-4);
+}
+
+/* New Conversation button */
+.new-chat-btn {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 1.5px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast),
+              background var(--transition-fast);
+}
+
+.new-chat-btn:hover {
+  color: var(--color-error);
+  border-color: var(--color-error);
+  background: var(--color-error-bg);
+}
