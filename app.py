@@ -13,6 +13,7 @@ Usage:
 
 import os
 import json
+import secrets
 from flask import Flask, render_template, request, jsonify, session
 import boto3
 from botocore.exceptions import ClientError, NoCredentialsError
@@ -29,36 +30,17 @@ app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "techcorp-dev-secret-key-change-in-prod")
 
 # ---------------------------------------------------------------------------
-# Configuration — loaded from .env
+# Configuration — loaded from .env / Docker --env-file at runtime
 # ---------------------------------------------------------------------------
 AWS_ACCESS_KEY_ID     = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_REGION            = os.getenv("AWS_REGION", "us-east-1")
 
-# These two are set AFTER you create the Knowledge Base in the AWS Console
-KNOWLEDGE_BASE_ID = os.getenv("KNOWLEDGE_BASE_ID")
+# Bedrock Agent — set these after creating the Agent in the AWS Console
+AGENT_ID       = os.getenv("AGENT_ID")
+AGENT_ALIAS_ID = os.getenv("AGENT_ALIAS_ID")
 
-# Accepts either a full ARN or a plain model ID.
-# If a model ID is given (e.g. "us.anthropic.claude-haiku-4-5-20251001-v1:0"),
-# it is automatically expanded into the required ARN format.
-_MODEL_ARN_RAW = os.getenv("MODEL_ARN", "")
-
-
-def build_model_arn(value: str) -> str:
-    """
-    Return a Bedrock-compatible model ARN.
-    If `value` is already a full ARN (starts with "arn:") it is returned as-is.
-    Otherwise it is treated as a model ID and wrapped in the standard ARN format.
-    """
-    if value.startswith("arn:"):
-        return value
-    # Construct the ARN from the region + model ID
-    return f"arn:aws:bedrock:{AWS_REGION}::foundation-model/{value}"
-
-
-MODEL_ARN = build_model_arn(_MODEL_ARN_RAW) if _MODEL_ARN_RAW else ""
-
-# The exact string Bedrock returns when no relevant document exists in the KB
+# The exact string the Agent returns when no relevant document is found
 FALLBACK_TRIGGER = "Sorry, I am unable to assist you with this request."
 
 # Cross-region inference profile used for the direct fallback call to Claude
@@ -122,6 +104,57 @@ def call_general_knowledge_fallback(question: str) -> str:
     return response_body["content"][0]["text"]
 
 
+def parse_agent_response(response):
+    """
+    Iterates the EventStream returned by invoke_agent and assembles the full
+    answer plus source citations.
+
+    invoke_agent sends the reply as a stream of events. Each 'chunk' event
+    contains a piece of the answer in chunk['bytes'] and optionally citation
+    metadata in chunk['attribution'].
+
+    Returns:
+        answer_text  (str)  — the complete decoded answer
+        citations    (list) — de-duplicated list of {"source", "uri", "snippet"}
+    """
+    full_text     = ""
+    raw_citations = []
+
+    for event in response.get("completion", []):
+        # Only 'chunk' events carry answer text; skip trace / returnControl events
+        if "chunk" not in event:
+            continue
+
+        chunk = event["chunk"]
+
+        # Decode and accumulate the text fragment
+        if "bytes" in chunk:
+            full_text += chunk["bytes"].decode("utf-8")
+
+        # Citations arrive in chunk['attribution']['citations'][*]['retrievedReferences']
+        if "attribution" in chunk:
+            for citation in chunk["attribution"].get("citations", []):
+                for ref in citation.get("retrievedReferences", []):
+                    s3_uri   = ref.get("location", {}).get("s3Location", {}).get("uri", "")
+                    filename = s3_uri.split("/")[-1] if s3_uri else "Unknown source"
+                    snippet  = ref.get("content", {}).get("text", "")[:250]
+                    raw_citations.append({
+                        "source":  filename,
+                        "uri":     s3_uri,
+                        "snippet": snippet,
+                    })
+
+    # De-duplicate citations that point to the same source file
+    seen             = set()
+    unique_citations = []
+    for c in raw_citations:
+        if c["source"] not in seen:
+            seen.add(c["source"])
+            unique_citations.append(c)
+
+    return full_text.strip(), unique_citations
+
+
 # ---------------------------------------------------------------------------
 # Route: GET /  — render the main portal page
 # ---------------------------------------------------------------------------
@@ -141,14 +174,14 @@ def ask():
       { "answer": "...", "citations": [...], "error": null }
     """
 
-    # Guard: verify Bedrock is configured before making any AWS call
-    if not KNOWLEDGE_BASE_ID or not MODEL_ARN:
+    # Guard: verify the Agent is configured before making any AWS call
+    if not AGENT_ID or not AGENT_ALIAS_ID:
         return jsonify({
             "answer": None,
             "citations": [],
             "error": (
-                "The Bedrock Knowledge Base is not configured yet. "
-                "Please set KNOWLEDGE_BASE_ID and MODEL_ARN in your .env file, "
+                "Bedrock Agent is not configured. "
+                "Please set AGENT_ID and AGENT_ALIAS_ID in your .env file, "
                 "then restart the server."
             ),
         }), 503
@@ -164,42 +197,36 @@ def ask():
 
     question = body["question"].strip()
 
-    # Call Amazon Bedrock retrieve_and_generate
+    # Call the Bedrock Agent via invoke_agent
     try:
         client = get_bedrock_client()
 
-        # Read the Bedrock session ID stored from the previous turn (None on first message).
-        # Passing it back to Bedrock lets the model remember earlier Q&A in this conversation.
+        # Session management for invoke_agent is different from retrieve_and_generate:
+        # WE create the session ID ourselves and pass it on every call.
+        # Bedrock stores the conversation history against this ID on its side.
         bedrock_session_id = session.get("bedrock_session_id")
+        if not bedrock_session_id:
+            # First message in this conversation — generate a fresh session ID
+            bedrock_session_id = secrets.token_hex(16)
+            session["bedrock_session_id"] = bedrock_session_id
 
-        # Build the request dictionary step by step (simple and easy to read)
-        bedrock_request = {
-            "input": {"text": question},
-            "retrieveAndGenerateConfiguration": {
-                "type": "KNOWLEDGE_BASE",
-                "knowledgeBaseConfiguration": {
-                    "knowledgeBaseId": KNOWLEDGE_BASE_ID,
-                    "modelArn": MODEL_ARN,
-                },
-            },
-        }
+        # invoke_agent returns a streaming EventStream — do NOT await it
+        response = client.invoke_agent(
+            agentId=AGENT_ID,
+            agentAliasId=AGENT_ALIAS_ID,
+            sessionId=bedrock_session_id,
+            inputText=question,
+        )
 
-        # Only add sessionId when we already have one from a previous turn
-        if bedrock_session_id:
-            bedrock_request["sessionId"] = bedrock_session_id
+        # Walk the stream: assemble the full answer text and collect citations
+        answer, citations = parse_agent_response(response)
 
-        response = client.retrieve_and_generate(**bedrock_request)
+        # An empty response is treated the same as "unable to assist"
+        if not answer:
+            answer = FALLBACK_TRIGGER
 
-        # Save the sessionId Bedrock returned so the next request continues this conversation
-        session["bedrock_session_id"] = response.get("sessionId")
-
-        # The generated answer lives at response["output"]["text"]
-        answer = response.get("output", {}).get("text", "No answer returned.")
-
-        # If Bedrock found no relevant document in the Knowledge Base it returns
-        # this exact string. Fall back to a direct Claude call so the user still
-        # gets a helpful response from the model's general knowledge.
-        if answer == FALLBACK_TRIGGER:
+        # If the Agent found no relevant document, fall back to general Claude knowledge
+        if answer.strip() == FALLBACK_TRIGGER:
             fallback_answer = call_general_knowledge_fallback(question)
             return jsonify({
                 "answer":    fallback_answer,
@@ -207,70 +234,16 @@ def ask():
                 "error":     None,
             })
 
-        # Extract source citations from the response.
-        # Each citation can have multiple retrievedReferences pointing back to S3 objects.
-        citations = []
-        for citation in response.get("citations", []):
-            for ref in citation.get("retrievedReferences", []):
-                # Pull the S3 URI from the location object
-                s3_uri  = ref.get("location", {}).get("s3Location", {}).get("uri", "")
-                # Show just the filename, not the full s3://bucket/path
-                filename = s3_uri.split("/")[-1] if s3_uri else "Unknown source"
-                # Grab the first 250 characters of the retrieved chunk as a preview
-                snippet  = ref.get("content", {}).get("text", "")[:250]
-                citations.append({
-                    "source":  filename,
-                    "uri":     s3_uri,
-                    "snippet": snippet,
-                })
-
-        # De-duplicate citations that point to the same source file
-        seen = set()
-        unique_citations = []
-        for c in citations:
-            if c["source"] not in seen:
-                seen.add(c["source"])
-                unique_citations.append(c)
-
         return jsonify({
             "answer":    answer,
-            "citations": unique_citations,
+            "citations": citations,
             "error":     None,
         })
 
-    # Handle AWS-specific errors with targeted, actionable messages
+    # Handle AWS-specific errors
     except ClientError as e:
         code    = e.response["Error"]["Code"]
         message = e.response["Error"]["Message"]
-
-        # ValidationException with "inference profile" in the message means the
-        # MODEL_ARN points to a plain model ID. Claude 3.5+ and Claude 4.x models
-        # require a cross-region inference profile ARN instead.
-        # Fix: add the regional prefix "us." (or "eu." / "ap.") before the model ID.
-        #
-        # Wrong:  arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0
-        # Correct: arn:aws:bedrock:us-east-1::foundation-model/us.anthropic.claude-haiku-4-5-20251001-v1:0
-        if code == "ValidationException" and "inference profile" in message.lower():
-            # Try to build the corrected ARN automatically so the user can copy-paste it
-            suggested = MODEL_ARN or ""
-            # Insert "us." before the model slug if it's a plain foundation-model ARN
-            if "foundation-model/anthropic." in suggested:
-                suggested = suggested.replace(
-                    "foundation-model/anthropic.",
-                    "foundation-model/us.anthropic.",
-                )
-            hint = (
-                "Your MODEL_ARN uses a direct model ID. "
-                "Claude 3.5+ and Claude 4.x models require a cross-region inference profile ARN. "
-                "Update MODEL_ARN in your .env file and restart the server.\n\n"
-                f"Suggested fix:\nMODEL_ARN={suggested}"
-            )
-            return jsonify({
-                "answer":    None,
-                "citations": [],
-                "error":     hint,
-            }), 400
-
         return jsonify({
             "answer":    None,
             "citations": [],
@@ -312,12 +285,12 @@ if __name__ == "__main__":
     print("  TechCorp Onboarding Portal — Starting Up")
     print("=" * 50)
     print(f"  AWS Region        : {AWS_REGION}")
-    print(f"  Knowledge Base ID : {KNOWLEDGE_BASE_ID or '⚠ NOT SET'}")
-    print(f"  Model ARN         : {MODEL_ARN or '⚠ NOT SET'}")
+    print(f"  Agent ID          : {AGENT_ID       or '⚠ NOT SET'}")
+    print(f"  Agent Alias ID    : {AGENT_ALIAS_ID or '⚠ NOT SET'}")
     print("=" * 50)
-    if not KNOWLEDGE_BASE_ID or not MODEL_ARN:
-        print("  WARNING: Set KNOWLEDGE_BASE_ID and MODEL_ARN in .env")
-        print("           to enable Bedrock queries.\n")
+    if not AGENT_ID or not AGENT_ALIAS_ID:
+        print("  WARNING: Set AGENT_ID and AGENT_ALIAS_ID in .env")
+        print("           to enable Bedrock Agent queries.\n")
     print("  Running at: http://localhost:5000\n")
     # host='0.0.0.0' is required inside Docker so the container
     # accepts connections from outside (the host machine).
