@@ -8,7 +8,7 @@ Usage:
     1. Fill in your .env file (copy from .env.example).
     2. pip install -r requirements.txt
     3. python app.py
-    4. Open http://localhost:5001 in your browser.
+    4. Open http://localhost:5000 in your browser.
 """
 
 import os

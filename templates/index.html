@@ -6,7 +6,7 @@
   <title>TechCorp — Employee Onboarding Portal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link
-    href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
     rel="stylesheet"
   />
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
@@ -29,7 +29,7 @@
         </div>
         <div class="brand-text">
           <span class="brand-name">TechCorp</span>
-          <span class="brand-subtitle">Employee Onboarding Portal</span>
+          <span class="brand-subtitle">Onboarding Assistant</span>
         </div>
       </div>
       <nav class="header-nav">
@@ -39,6 +39,66 @@
   </header>
 
   <main class="main-content">
+
+    <!-- ============================================================
+         PHYSICAL OFFICE DECORATIONS
+         Folder tabs peeking above the paper, binder holes punched
+         into the left margin, and a metallic paperclip on the corner.
+    ============================================================ -->
+
+    <!-- Folder tabs — stick up above the top edge of the paper -->
+    <div class="folder-tabs" aria-hidden="true">
+      <span class="folder-tab tab-green">Onboarding</span>
+      <span class="folder-tab tab-amber">HR Policies</span>
+      <span class="folder-tab tab-navy">IT &amp; Setup</span>
+    </div>
+
+    <!-- Binder holes — punched into the left margin -->
+    <div class="binder-holes" aria-hidden="true">
+      <div class="binder-hole"></div>
+      <div class="binder-hole"></div>
+      <div class="binder-hole"></div>
+    </div>
+
+    <!-- Metallic paperclip — positioned at top-right of page -->
+    <div class="paperclip-wrap" aria-hidden="true">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 90" width="28" height="84">
+        <defs>
+          <!-- Simulates the cylindrical wire catching light from the right -->
+          <linearGradient id="metalGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%"   stop-color="#787878"/>
+            <stop offset="32%"  stop-color="#c8c8c8"/>
+            <stop offset="58%"  stop-color="#ebebeb"/>
+            <stop offset="100%" stop-color="#909090"/>
+          </linearGradient>
+        </defs>
+        <!--
+          Classic "Gem" paperclip: one continuous path tracing
+          the outer oval, connecting into the inner oval, and
+          ending partway up the inner left side.
+        -->
+        <path d="
+          M 15 5
+          C 24 5 27 12 27 20
+          L 27 68
+          C 27 78 22 83 15 83
+          C 8  83 3  78 3  68
+          L 3  22
+          C 3  13 8  7  15 7
+          C 22 7  25 13 25 22
+          L 25 66
+          C 25 74 21 78 15 78
+          C 9  78 7  73 7  66
+          L 7  32
+        "
+          fill="none"
+          stroke="url(#metalGrad)"
+          stroke-width="4.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </div>
 
     <!-- Hero -->
     <section class="hero">
@@ -57,7 +117,7 @@
 
     <!-- Suggestion chips -->
     <section class="suggestions">
-      <p class="suggestions-label">&#x1F4CC; Pinned topics — click to ask</p>
+      <p class="suggestions-label">Quick topics — click to ask</p>
       <div class="suggestion-chips">
         <button class="chip" data-q="How do I connect to the VPN on my first day?">&#x1F512; VPN Setup</button>
         <button class="chip" data-q="What is the vacation policy for US employees?">&#x1F334; Vacation Policy</button>
@@ -79,7 +139,7 @@
     <!-- Ask form -->
     <section class="ask-card">
       <div class="ask-card-inner">
-        <h2 class="card-title">&#x270F;&#xFE0F; Ask Your HR Assistant</h2>
+        <h2 class="card-title">Ask the Onboarding Assistant</h2>
         <form id="ask-form" autocomplete="off">
           <div class="input-group">
             <textarea
@@ -172,16 +232,19 @@
       scrollToBottom();
     }
 
-    // ---- Step 2: append an animated "typing…" bubble while waiting ----
+    // ---- Step 2: append an animated "thinking…" bubble while waiting ----
     function appendLoadingBubble() {
       const div = document.createElement("div");
       div.className = "chat-msg chat-msg-assistant";
       div.id = "loading-bubble";
       div.innerHTML = `
         <div class="chat-bubble chat-bubble-loading">
-          <span class="typing-dot"></span>
-          <span class="typing-dot"></span>
-          <span class="typing-dot"></span>
+          <div class="thinking-dots">
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+          </div>
+          <span class="thinking-label">Agent is thinking…</span>
         </div>`;
       chatThread.appendChild(div);
       scrollToBottom();
