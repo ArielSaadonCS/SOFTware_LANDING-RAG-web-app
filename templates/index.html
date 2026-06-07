@@ -38,20 +38,30 @@
     </div>
   </header>
 
+  <div class="notepad-wrapper">
+
+    <!-- ============================================================
+         FOLDER TAB NAVIGATION — Physical binder tabs above the paper
+    ============================================================ -->
+    <nav class="tab-nav" role="tablist" aria-label="Topic tabs">
+      <button class="tab-btn tab-btn--knowledge active"
+              role="tab" aria-selected="true"
+              data-tab="knowledge">Knowledge Base</button>
+      <button class="tab-btn tab-btn--weather"
+              role="tab" aria-selected="false"
+              data-tab="weather">Weather &amp; Lunch</button>
+      <button class="tab-btn tab-btn--holidays"
+              role="tab" aria-selected="false"
+              data-tab="holidays">Upcoming Holidays</button>
+    </nav>
+
   <main class="main-content">
 
     <!-- ============================================================
          PHYSICAL OFFICE DECORATIONS
-         Folder tabs peeking above the paper, binder holes punched
-         into the left margin, and a metallic paperclip on the corner.
+         Binder holes punched into the left margin and a metallic
+         paperclip on the corner.
     ============================================================ -->
-
-    <!-- Folder tabs — stick up above the top edge of the paper -->
-    <div class="folder-tabs" aria-hidden="true">
-      <span class="folder-tab tab-green">Onboarding</span>
-      <span class="folder-tab tab-amber">HR Policies</span>
-      <span class="folder-tab tab-navy">IT &amp; Setup</span>
-    </div>
 
     <!-- Binder holes — punched into the left margin -->
     <div class="binder-holes" aria-hidden="true">
@@ -108,7 +118,7 @@
         <span class="badge-day">Day 1</span>
       </div>
       <h1 class="hero-title">Welcome to the Office</h1>
-      <p class="hero-subtitle">
+      <p class="hero-subtitle" id="hero-subtitle">
         Ask any question about your onboarding, HR policies, IT setup, office
         access, or company culture — and get an instant answer sourced directly
         from official TechCorp documentation.
@@ -118,7 +128,7 @@
     <!-- Suggestion chips -->
     <section class="suggestions">
       <p class="suggestions-label">Quick topics — click to ask</p>
-      <div class="suggestion-chips">
+      <div class="suggestion-chips" id="suggestion-chips">
         <button class="chip" data-q="How do I connect to the VPN on my first day?">&#x1F512; VPN Setup</button>
         <button class="chip" data-q="What is the vacation policy for US employees?">&#x1F334; Vacation Policy</button>
         <button class="chip" data-q="How do I submit an expense report?">&#x1F9FE; Expense Reports</button>
@@ -166,6 +176,7 @@
     </section>
 
   </main>
+  </div><!-- /.notepad-wrapper -->
 
   <footer class="site-footer">
     <div class="footer-inner">
@@ -190,12 +201,105 @@
     const chatThread    = document.getElementById("chat-thread");
     const newChatBtn    = document.getElementById("new-chat-btn");
 
-    // ---- Suggestion chips: click to fill the textarea ----
-    document.querySelectorAll(".chip").forEach((chip) => {
-      chip.addEventListener("click", () => {
-        questionInput.value = chip.dataset.q;
-        questionInput.focus();
-        document.querySelector(".ask-card").scrollIntoView({ behavior: "smooth" });
+    // ---- Folder Tab Navigation ----
+    let currentActiveTab = 'knowledge';
+    const TAB_CONTEXT_PREFIX = {
+      knowledge: '',
+      weather:   '[Context: Weather] ',
+      holidays:  '[Context: Holidays] ',
+    };
+    const TAB_LABEL = {
+      knowledge: 'Knowledge Base',
+      weather:   'Weather & Lunch',
+      holidays:  'Upcoming Holidays',
+    };
+
+    // ---- Dynamic home page content per tab ----
+    const TAB_CONTENT = {
+      knowledge: {
+        intro: "Ask any question about your onboarding, HR policies, IT setup, office access, or company culture — and get an instant answer sourced directly from official TechCorp documentation.",
+        chips: [
+          { label: "🔒 VPN Setup",        q: "How do I connect to the VPN on my first day?" },
+          { label: "🌴 Vacation Policy",   q: "What is the vacation policy for US employees?" },
+          { label: "🧾 Expense Reports",   q: "How do I submit an expense report?" },
+          { label: "🖥 IT Help Desk",      q: "Where is the IT Help Desk located in the San Francisco office?" },
+          { label: "💻 Hardware Request",  q: "How do I request new hardware or a laptop?" },
+          { label: "📖 Code of Conduct",   q: "What is TechCorp's code of conduct?" },
+          { label: "📅 Book a Room",       q: "How do I book a meeting room?" },
+          { label: "🚨 Evacuation",        q: "What are the fire evacuation procedures?" },
+        ],
+      },
+      weather: {
+        intro: "Check today's local forecast to plan your commute, get office clothing recommendations based on the temperature, and explore nearby lunch options.",
+        chips: [
+          { label: "☀️ Today's Weather",             q: "What is the weather like today?" },
+          { label: "🧥 Do I need a coat?",           q: "Do I need a coat today based on the temperature?" },
+          { label: "🍔 Lunch spots near the office", q: "What are good lunch spots near the office?" },
+          { label: "☕ Best local coffee",                 q: "What are the best local coffee shops near the office?" },
+        ],
+      },
+      holidays: {
+        intro: "Stay informed about upcoming regional holidays, company-wide days off, and office closures to plan your schedule.",
+        chips: [
+          { label: "📅 Next company holiday",                        q: "What is the next company holiday?" },
+          { label: "🏖️ Next long weekend",                     q: "When is the next long weekend?" },
+          { label: "🎉 Is the office open during the next holiday?", q: "Is the office open during the next upcoming holiday?" },
+        ],
+      },
+    };
+
+    const heroSubtitle    = document.getElementById('hero-subtitle');
+    const suggestionChips = document.getElementById('suggestion-chips');
+
+    function renderHomeContent(tab) {
+      const content = TAB_CONTENT[tab];
+
+      // Update the intro paragraph
+      heroSubtitle.textContent = content.intro;
+
+      // Rebuild chip buttons
+      suggestionChips.innerHTML = '';
+      content.chips.forEach(({ label, q }) => {
+        const btn = document.createElement('button');
+        btn.className  = 'chip';
+        btn.dataset.q  = q;
+        btn.textContent = label;
+        btn.addEventListener('click', () => {
+          questionInput.value = q;
+          questionInput.focus();
+          document.querySelector('.ask-card').scrollIntoView({ behavior: 'smooth' });
+        });
+        suggestionChips.appendChild(btn);
+      });
+    }
+
+    // Render initial (Knowledge Base) chips — replaces static HTML listeners
+    renderHomeContent('knowledge');
+
+    document.querySelectorAll('.tab-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const newTab = btn.dataset.tab;
+        if (newTab === currentActiveTab) return;
+
+        // Update button active states
+        document.querySelectorAll('.tab-btn').forEach((b) => {
+          b.classList.toggle('active', b === btn);
+          b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
+        });
+
+        // Swap home page content
+        renderHomeContent(newTab);
+
+        // Insert a divider in the chat thread if there are messages
+        if (!chatThread.hidden && chatThread.children.length > 0) {
+          const divider = document.createElement('div');
+          divider.className = 'chat-tab-divider';
+          divider.textContent = `— Switched to ${TAB_LABEL[newTab]} —`;
+          chatThread.appendChild(divider);
+          chatThread.scrollTop = chatThread.scrollHeight;
+        }
+
+        currentActiveTab = newTab;
       });
     });
 
@@ -219,6 +323,279 @@
     // ---- Helper: scroll the chat thread to the bottom ----
     function scrollToBottom() {
       chatThread.scrollTop = chatThread.scrollHeight;
+    }
+
+    // ================================================================
+    // CONTEXT-AWARE STAMP GRAPHICS
+    // Detects temperature (°C) or holiday references in the LLM response
+    // and renders an ink-doodle / rubber-stamp SVG inside the chat bubble.
+    // ================================================================
+
+    // Ink colour and paper colour used inside all SVG stamp paths
+    const INK = '#2c1c10';
+    const PAP = '#fdfbf7';
+
+    // Known holidays: each entry has an array of name variants + a graphic key
+    const KNOWN_HOLIDAYS = [
+      { names: ['christmas', 'xmas', 'x-mas'],                             key: 'christmas'    },
+      { names: ["new year's day", "new year's", 'new year', 'sylvester'],   key: 'new_year'     },
+      { names: ['halloween'],                                                key: 'halloween'    },
+      { names: ['thanksgiving'],                                             key: 'thanksgiving' },
+      { names: ['easter', 'passover', 'pesach'],                            key: 'easter'       },
+      { names: ['hanukkah', 'chanukah', 'hanuka'],                          key: 'hanukkah'     },
+      { names: ["valentine's day", "valentine's", 'valentines day'],        key: 'valentine'    },
+      { names: ['independence day', '4th of july', 'july 4th', 'july 4'],   key: 'independence' },
+      { names: ['diwali', 'divali', 'deepavali'],                           key: 'diwali'       },
+    ];
+
+    // Patterns that signal "holiday context" even for unknown holidays
+    const HOLIDAY_CONTEXT_RE = [
+      /\b(?:holiday|celebration|festive|festival|feast|observance)\b/i,
+      /\bday off\b/i,
+      /\b(?:national|public|bank)\s+holiday\b/i,
+    ];
+
+    // Extract the first Celsius temperature found in text; returns Number or null
+    function extractTemperature(text) {
+      const patterns = [
+        /(-?\d+(?:\.\d+)?)\s*°\s*[Cc]/,
+        /(-?\d+(?:\.\d+)?)\s+degrees?\s+[Cc]elsius\b/i,
+        /(-?\d+(?:\.\d+)?)\s+degrees?\s+[Cc](?!\w)/i,
+        /(-?\d+(?:\.\d+)?)\s*[Cc]elsius\b/i,
+      ];
+      for (const re of patterns) {
+        const m = text.match(re);
+        if (m) return parseFloat(m[1]);
+      }
+      return null;
+    }
+
+    // Detect holiday presence; returns {matched:'known'|'unknown', key} or null
+    function detectHoliday(text) {
+      const lower = text.toLowerCase();
+      for (const h of KNOWN_HOLIDAYS) {
+        if (h.names.some(name => lower.includes(name))) {
+          return { matched: 'known', key: h.key };
+        }
+      }
+      if (HOLIDAY_CONTEXT_RE.some(re => re.test(text))) {
+        return { matched: 'unknown', key: 'generic' };
+      }
+      return null;
+    }
+
+    // Master detector — returns context object or null
+    function detectGraphicContext(text) {
+      const temp = extractTemperature(text);
+      if (temp !== null) {
+        const level = temp < 15 ? 'cold' : temp > 25 ? 'hot' : 'mild';
+        return { type: 'weather', temp, level };
+      }
+      const holiday = detectHoliday(text);
+      if (holiday) return { type: 'holiday', ...holiday };
+      return null;
+    }
+
+    // SVG stamp library — all drawn in dark ink on paper, hand-doodle style
+    const STAMP_SVGS = {
+
+      cold: { label: 'Cold Weather', cls: 'stamp-cold', svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="70" height="70">
+        <path d="M 10 42 Q 40 5 70 42" stroke="${INK}" stroke-width="2.5" fill="${PAP}" stroke-linecap="round"/>
+        <line x1="40" y1="42" x2="40" y2="8"  stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="40" y1="42" x2="14" y2="22" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="40" y1="42" x2="66" y2="22" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="40" y1="42" x2="24" y2="13" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="40" y1="42" x2="56" y2="13" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M 40 42 L 40 67 Q 40 74 34 74 Q 27 74 27 67" stroke="${INK}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <line x1="18" y1="52" x2="15" y2="61" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="33" y1="57" x2="30" y2="66" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="55" y1="54" x2="52" y2="63" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="66" y1="49" x2="63" y2="58" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>` },
+
+      mild: { label: 'Mild Weather', cls: 'stamp-mild', svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="70" height="70">
+        <line x1="56" y1="26" x2="56" y2="18" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+        <line x1="56" y1="46" x2="56" y2="54" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+        <line x1="46" y1="36" x2="38" y2="36" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+        <line x1="66" y1="36" x2="74" y2="36" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+        <line x1="49" y1="29" x2="43" y2="23" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+        <line x1="63" y1="29" x2="69" y2="23" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="56" cy="36" r="9" stroke="${INK}" stroke-width="2" fill="none"/>
+        <path d="M 10 55 Q 10 45 20 45 Q 20 38 30 40 Q 33 33 44 36 Q 50 30 55 36 Q 60 33 62 38 Q 66 40 64 48 Q 64 55 56 55 Z"
+              stroke="${INK}" stroke-width="2" fill="${PAP}" stroke-linejoin="round"/>
+      </svg>` },
+
+      hot: { label: 'Hot Weather', cls: 'stamp-hot', svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="70" height="70">
+        <circle cx="40" cy="40" r="16" stroke="${INK}" stroke-width="2.5" fill="none"/>
+        <line x1="40" y1="20" x2="40" y2="10" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="40" y1="60" x2="40" y2="70" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="20" y1="40" x2="10" y2="40" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="60" y1="40" x2="70" y2="40" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="29" y1="29" x2="22" y2="22" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="51" y1="29" x2="58" y2="22" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="29" y1="51" x2="22" y2="58" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="51" y1="51" x2="58" y2="58" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M 22 72 Q 27 68 32 72 Q 37 76 42 72 Q 47 68 52 72 Q 57 76 62 72"
+              stroke="${INK}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      </svg>` },
+
+      christmas: { label: 'Merry Christmas', cls: 'stamp-holiday', svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="70" height="70">
+        <rect x="36" y="68" width="8" height="8" stroke="${INK}" stroke-width="1.5" fill="${PAP}" rx="1"/>
+        <polygon points="40,8 18,36 30,36 14,58 26,58 10,78 70,78 54,58 66,58 50,36 62,36"
+                 stroke="${INK}" stroke-width="2" fill="${PAP}" stroke-linejoin="round"/>
+        <polygon points="40,3 41.5,8 46.5,8 42.5,11 44,16 40,13 36,16 37.5,11 33.5,8 38.5,8"
+                 stroke="${INK}" stroke-width="1.5" fill="${INK}"/>
+        <circle cx="34" cy="47" r="2.5" fill="${INK}"/>
+        <circle cx="46" cy="43" r="2.5" fill="${INK}"/>
+        <circle cx="40" cy="55" r="2.5" fill="${INK}"/>
+      </svg>` },
+
+      new_year: { label: 'Happy New Year', cls: 'stamp-holiday', svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="70" height="70">
+        <line x1="40" y1="40" x2="40" y2="18" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+        <line x1="40" y1="40" x2="40" y2="62" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+        <line x1="40" y1="40" x2="18" y2="40" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+        <line x1="40" y1="40" x2="62" y2="40" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+        <line x1="40" y1="40" x2="25" y2="25" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+        <line x1="40" y1="40" x2="55" y2="25" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+        <line x1="40" y1="40" x2="25" y2="55" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+        <line x1="40" y1="40" x2="55" y2="55" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="40" cy="16" r="2.5" fill="${INK}"/>
+        <circle cx="40" cy="64" r="2.5" fill="${INK}"/>
+        <circle cx="16" cy="40" r="2.5" fill="${INK}"/>
+        <circle cx="64" cy="40" r="2.5" fill="${INK}"/>
+        <circle cx="23" cy="23" r="2"   fill="${INK}"/>
+        <circle cx="57" cy="23" r="2"   fill="${INK}"/>
+        <circle cx="23" cy="57" r="2"   fill="${INK}"/>
+        <circle cx="57" cy="57" r="2"   fill="${INK}"/>
+        <line x1="68" y1="18" x2="68" y2="10" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="68" y1="18" x2="76" y2="18" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="68" y1="18" x2="62" y2="12" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="68" y1="18" x2="74" y2="12" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>` },
+
+      halloween: { label: 'Happy Halloween', cls: 'stamp-holiday', svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="70" height="70">
+        <path d="M 40 16 Q 46 8 50 6" stroke="${INK}" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <ellipse cx="40" cy="50" rx="30" ry="24" stroke="${INK}" stroke-width="2" fill="none"/>
+        <path d="M 18 50 Q 24 28 30 50 Q 36 72 40 50 Q 44 28 50 50 Q 56 72 62 50"
+              stroke="${INK}" stroke-width="1.5" fill="none"/>
+        <polygon points="28,44 33,37 38,44" stroke="${INK}" stroke-width="1.5" fill="${INK}"/>
+        <polygon points="42,44 47,37 52,44" stroke="${INK}" stroke-width="1.5" fill="${INK}"/>
+        <path d="M 26 57 L 30 54 L 34 59 L 38 54 L 42 59 L 46 54 L 50 57 L 54 54"
+              stroke="${INK}" stroke-width="1.5" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+      </svg>` },
+
+      thanksgiving: { label: 'Happy Thanksgiving', cls: 'stamp-holiday', svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="70" height="70">
+        <ellipse cx="42" cy="58" rx="18" ry="14" stroke="${INK}" stroke-width="2" fill="none"/>
+        <circle  cx="55" cy="42" r="8"           stroke="${INK}" stroke-width="2" fill="none"/>
+        <path d="M 62 40 L 69 38 L 62 43 Z" stroke="${INK}" stroke-width="1.5" fill="${INK}"/>
+        <path d="M 60 44 Q 66 49 61 53" stroke="${INK}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <line x1="32" y1="52" x2="14" y2="40" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+        <line x1="30" y1="46" x2="14" y2="28" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+        <line x1="30" y1="40" x2="20" y2="22" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+        <line x1="33" y1="36" x2="28" y2="18" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+        <line x1="38" y1="36" x2="37" y2="16" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M 36 72 L 33 78 M 33 78 L 30 76 M 33 78 L 31 80 M 33 78 L 35 80"
+              stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M 48 72 L 50 78 M 50 78 L 47 76 M 50 78 L 48 80 M 50 78 L 52 80"
+              stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>` },
+
+      easter: { label: 'Happy Easter / Spring', cls: 'stamp-holiday', svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="70" height="70">
+        <path d="M 40 8 C 56 8 66 24 66 45 C 66 63 55 74 40 74 C 25 74 14 63 14 45 C 14 24 24 8 40 8 Z"
+              stroke="${INK}" stroke-width="2" fill="none"/>
+        <path d="M 17 42 Q 28 38 40 42 Q 52 46 63 42" stroke="${INK}" stroke-width="1.5" fill="none"/>
+        <path d="M 23 28 L 28 23 L 33 28 L 38 23 L 43 28 L 48 23 L 53 28 L 58 23"
+              stroke="${INK}" stroke-width="1.5" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle cx="30" cy="56" r="3" fill="${INK}"/>
+        <circle cx="40" cy="62" r="3" fill="${INK}"/>
+        <circle cx="50" cy="56" r="3" fill="${INK}"/>
+      </svg>` },
+
+      hanukkah: { label: 'Happy Hanukkah', cls: 'stamp-holiday', svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="70" height="70">
+        <path d="M 22 74 L 58 74 L 55 68 L 25 68 Z" stroke="${INK}" stroke-width="1.5" fill="${PAP}"/>
+        <rect x="38" y="30" width="4" height="38" stroke="${INK}" stroke-width="1.5" fill="${PAP}" rx="1"/>
+        <path d="M 38 52 Q 28 52 26 44 L 26 38" stroke="${INK}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <path d="M 38 52 Q 18 52 16 42 L 16 36" stroke="${INK}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <path d="M 38 52 Q  8 52  6 42 L  6 36" stroke="${INK}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <path d="M 42 52 Q 52 52 54 44 L 54 38" stroke="${INK}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <path d="M 42 52 Q 62 52 64 42 L 64 36" stroke="${INK}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <path d="M 42 52 Q 72 52 74 42 L 74 36" stroke="${INK}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <path d="M 40 28 Q 37 22 40 18 Q 43 22 40 28 Z" stroke="${INK}" stroke-width="1" fill="${INK}"/>
+        <path d="M 26 36 Q 23 30 26 26 Q 29 30 26 36 Z" stroke="${INK}" stroke-width="1" fill="${INK}"/>
+        <path d="M 16 34 Q 13 28 16 24 Q 19 28 16 34 Z" stroke="${INK}" stroke-width="1" fill="${INK}"/>
+        <path d="M  6 34 Q  3 28  6 24 Q  9 28  6 34 Z" stroke="${INK}" stroke-width="1" fill="${INK}"/>
+        <path d="M 54 36 Q 51 30 54 26 Q 57 30 54 36 Z" stroke="${INK}" stroke-width="1" fill="${INK}"/>
+        <path d="M 64 34 Q 61 28 64 24 Q 67 28 64 34 Z" stroke="${INK}" stroke-width="1" fill="${INK}"/>
+        <path d="M 74 34 Q 71 28 74 24 Q 77 28 74 34 Z" stroke="${INK}" stroke-width="1" fill="${INK}"/>
+      </svg>` },
+
+      valentine: { label: "Happy Valentine's", cls: 'stamp-holiday', svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="70" height="70">
+        <path d="M 40 68 C 40 68 7 50 7 30 C 7 17 17 10 27 14 C 33 16 38 22 40 27 C 42 22 47 16 53 14 C 63 10 73 17 73 30 C 73 50 40 68 40 68 Z"
+              stroke="${INK}" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+        <line x1="14" y1="56" x2="66" y2="24" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>
+        <polyline points="59,20 66,24 62,31" stroke="${INK}" stroke-width="1.5" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+        <polyline points="21,60 14,56 18,49" stroke="${INK}" stroke-width="1.5" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+      </svg>` },
+
+      independence: { label: 'Independence Day', cls: 'stamp-holiday', svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="70" height="70">
+        <line x1="18" y1="8"  x2="18" y2="76" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M 18 10 L 68 18 L 68 42 L 18 34 Z" stroke="${INK}" stroke-width="1.5" fill="${PAP}" stroke-linejoin="round"/>
+        <line x1="18" y1="16" x2="68" y2="23" stroke="${INK}" stroke-width="0.8" opacity="0.5"/>
+        <line x1="18" y1="21" x2="68" y2="28" stroke="${INK}" stroke-width="0.8" opacity="0.5"/>
+        <line x1="18" y1="26" x2="68" y2="33" stroke="${INK}" stroke-width="0.8" opacity="0.5"/>
+        <line x1="18" y1="31" x2="68" y2="38" stroke="${INK}" stroke-width="0.8" opacity="0.5"/>
+        <rect x="18" y="10" width="22" height="16" stroke="${INK}" stroke-width="0.8" fill="${INK}" opacity="0.12"/>
+        <line x1="24" y1="14" x2="26" y2="16" stroke="${INK}" stroke-width="1"/><line x1="26" y1="14" x2="24" y2="16" stroke="${INK}" stroke-width="1"/>
+        <line x1="30" y1="14" x2="32" y2="16" stroke="${INK}" stroke-width="1"/><line x1="32" y1="14" x2="30" y2="16" stroke="${INK}" stroke-width="1"/>
+        <line x1="36" y1="14" x2="38" y2="16" stroke="${INK}" stroke-width="1"/><line x1="38" y1="14" x2="36" y2="16" stroke="${INK}" stroke-width="1"/>
+        <line x1="24" y1="20" x2="26" y2="22" stroke="${INK}" stroke-width="1"/><line x1="26" y1="20" x2="24" y2="22" stroke="${INK}" stroke-width="1"/>
+        <line x1="30" y1="20" x2="32" y2="22" stroke="${INK}" stroke-width="1"/><line x1="32" y1="20" x2="30" y2="22" stroke="${INK}" stroke-width="1"/>
+        <line x1="36" y1="20" x2="38" y2="22" stroke="${INK}" stroke-width="1"/><line x1="38" y1="20" x2="36" y2="22" stroke="${INK}" stroke-width="1"/>
+        <circle cx="18" cy="7" r="3.5" stroke="${INK}" stroke-width="1.5" fill="${PAP}"/>
+      </svg>` },
+
+      diwali: { label: 'Happy Diwali', cls: 'stamp-holiday', svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="70" height="70">
+        <path d="M 25 55 Q 20 65 30 68 Q 40 70 50 68 Q 60 66 55 55 Z"
+              stroke="${INK}" stroke-width="2" fill="${PAP}" stroke-linejoin="round"/>
+        <ellipse cx="40" cy="55" rx="15" ry="5"  stroke="${INK}" stroke-width="1.5" fill="${PAP}"/>
+        <ellipse cx="40" cy="55" rx="8"  ry="2.5" stroke="${INK}" stroke-width="1"   fill="none"/>
+        <line x1="40" y1="52" x2="44" y2="48" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M 44 46 Q 40 38 44 32 Q 48 38 44 46 Z" stroke="${INK}" stroke-width="1.5" fill="${INK}"/>
+        <line x1="44" y1="30" x2="44" y2="22" stroke="${INK}" stroke-width="1" stroke-linecap="round" opacity="0.55"/>
+        <line x1="50" y1="35" x2="56" y2="28" stroke="${INK}" stroke-width="1" stroke-linecap="round" opacity="0.55"/>
+        <line x1="52" y1="42" x2="60" y2="40" stroke="${INK}" stroke-width="1" stroke-linecap="round" opacity="0.55"/>
+        <line x1="36" y1="32" x2="30" y2="25" stroke="${INK}" stroke-width="1" stroke-linecap="round" opacity="0.55"/>
+        <line x1="33" y1="40" x2="25" y2="38" stroke="${INK}" stroke-width="1" stroke-linecap="round" opacity="0.55"/>
+      </svg>` },
+
+      generic: { label: 'Celebration', cls: 'stamp-holiday', svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="70" height="70">
+        <path d="M 8 72 L 32 48 L 58 62 Z" stroke="${INK}" stroke-width="2" fill="${PAP}" stroke-linejoin="round"/>
+        <ellipse cx="45" cy="55" rx="13" ry="7" transform="rotate(-45 45 55)" stroke="${INK}" stroke-width="1.5" fill="${PAP}"/>
+        <line x1="32" y1="48" x2="20" y2="30" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="32" y1="48" x2="44" y2="26" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="32" y1="48" x2="58" y2="34" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="32" y1="48" x2="62" y2="20" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="32" y1="48" x2="36" y2="14" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="18" cy="27" r="3"   fill="${INK}"/>
+        <circle cx="44" cy="22" r="3"   fill="${INK}"/>
+        <circle cx="62" cy="16" r="2.5" fill="${INK}"/>
+        <circle cx="68" cy="32" r="2.5" fill="${INK}"/>
+        <rect x="28" y="11" width="6" height="6" stroke="${INK}" stroke-width="1.5" fill="${PAP}" transform="rotate(20 31 14)"/>
+        <rect x="55" y="10" width="5" height="5" stroke="${INK}" stroke-width="1.5" fill="${PAP}" transform="rotate(-15 57.5 12.5)"/>
+        <rect x="70" y="22" width="5" height="5" stroke="${INK}" stroke-width="1.5" fill="${PAP}" transform="rotate(10 72.5 24.5)"/>
+      </svg>` },
+    };
+
+    // Build the stamp HTML string for a given context object (or return '' if none)
+    function buildStampHtml(context) {
+      if (!context) return '';
+      const key = context.type === 'weather' ? context.level : context.key;
+      const stamp = STAMP_SVGS[key];
+      if (!stamp) return '';
+      return `<div class="answer-stamp ${stamp.cls}">
+        <div class="stamp-graphic">${stamp.svg}</div>
+        <span class="stamp-label">${stamp.label}</span>
+      </div>`;
     }
 
     // ---- Step 1: append the user's question as a right-aligned bubble ----
@@ -258,7 +635,7 @@
 
     // ---- Step 4a: append the assistant's answer as a left-aligned bubble ----
     function appendAnswerBubble(answer, citations) {
-      // Build the citations HTML block if any sources were returned
+      // Citations block
       let citationsHtml = "";
       if (citations && citations.length > 0) {
         const items = citations.map((c) => `
@@ -270,12 +647,16 @@
         citationsHtml = `<div class="chat-citations"><p class="chat-citations-label">&#x1F5C2; Sources</p>${items}</div>`;
       }
 
+      // Context-aware ink stamp (weather or holiday) — '' when not applicable
+      const stampHtml = buildStampHtml(detectGraphicContext(answer));
+
       const div = document.createElement("div");
       div.className = "chat-msg chat-msg-assistant";
       div.innerHTML = `
         <div class="chat-bubble">
           <div class="chat-answer-text">${textToHtml(answer)}</div>
           ${citationsHtml}
+          ${stampHtml}
         </div>`;
       chatThread.appendChild(div);
       scrollToBottom();
@@ -327,17 +708,20 @@
       // Clear the input box so the user can type the next question
       questionInput.value = "";
 
+      // Prepend tab context prefix for the backend; display only the raw question
+      const queryToSend = TAB_CONTEXT_PREFIX[currentActiveTab] + question;
+
       // Show the user's question and the loading animation
       appendUserMessage(question);
       appendLoadingBubble();
       setBusy(true);
 
       try {
-        // Send the question to Flask /ask as JSON
+        // Send the prefixed question to Flask /ask; user sees the unprefixed version
         const response = await fetch("/ask", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question }),
+          body: JSON.stringify({ question: queryToSend }),
         });
 
         const data = await response.json();

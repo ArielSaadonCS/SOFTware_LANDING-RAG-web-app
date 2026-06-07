@@ -59,7 +59,9 @@
   --space-16: 64px;
 
   /* Layout */
-  --paper-width:  780px;
+  --paper-width:      780px;
+  /* Height of the sticky logo banner — used to offset the header's sticky top */
+  --logo-banner-height: 74px;
   --radius-sm:    4px;
   --radius-md:    8px;
   --radius-full:  9999px;
@@ -124,32 +126,67 @@ body {
 }
 
 /* ================================================================
-   LOGO BANNER — Brass nameplate mounted on the wall
+   LOGO BANNER — Brass nameplate, sticky above the header
 ================================================================ */
 .logo-banner {
-  background: linear-gradient(180deg, #2c1c10 0%, #1e1208 100%);
+  background: linear-gradient(180deg, #2c1c10 0%, #1a0c06 100%);
   border-bottom: 3px solid var(--color-brass-dark);
-  padding: 14px 24px;
+  /* Taller padding gives the large text room to breathe */
+  padding: 20px 24px;
+  min-height: var(--logo-banner-height);
   text-align: center;
-  box-shadow: 0 3px 14px rgba(0,0,0,0.55),
-              inset 0 1px 0 rgba(200,168,75,0.18);
+  /* Stick to the top — always visible while scrolling */
+  position: sticky;
+  top: 0;
+  z-index: 101;    /* above .site-header (z-index: 100) */
+  flex-shrink: 0;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.65),
+              inset 0 1px 0 rgba(200,168,75,0.22);
 }
 
 .logo-text {
   font-family: var(--font-typewriter);
-  font-size: 1rem;
-  letter-spacing: 0.32em;
-  color: var(--color-brass);
+  /* ~85 % larger than original 1 rem */
+  font-size: 1.85rem;
+  letter-spacing: 0.28em;
   text-transform: uppercase;
   margin: 0;
   line-height: 1;
-  text-shadow: 0 0 14px rgba(200,168,75,0.45), 0 1px 4px rgba(0,0,0,0.7);
+  /* Shiny metallic gold — vertical shimmer gradient painted onto the text */
+  background: linear-gradient(
+    180deg,
+    #fff8c0  0%,
+    #ffd700 15%,
+    #d4a017 38%,
+    #ffe566 52%,
+    #b8860b 70%,
+    #d4af37 86%,
+    #fff5a0 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  /* Warm outer glow + depth shadow for contrast on the dark wood */
+  filter: drop-shadow(0 0 10px rgba(220,185,60,0.60))
+          drop-shadow(0 2px 5px rgba(0,0,0,0.80));
 }
 
 .brand-highlight {
-  font-weight: 700;
-  color: var(--color-brass-light);
-  letter-spacing: 0.34em;
+  font-weight: 900;
+  letter-spacing: 0.30em;
+  /* Slightly brighter band of the shimmer on the accent words */
+  background: linear-gradient(
+    180deg,
+    #ffffff  0%,
+    #ffe566 18%,
+    #ffd700 45%,
+    #ffe566 62%,
+    #c8960c 80%,
+    #fffacc 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* ================================================================
@@ -160,7 +197,8 @@ body {
   border-bottom: 4px solid var(--color-brass-dark);
   border-top: 1px solid rgba(200,168,75,0.22);
   position: sticky;
-  top: 0;
+  /* Sits below the sticky logo banner when scrolling */
+  top: var(--logo-banner-height);
   z-index: 100;
   box-shadow: 0 3px 14px rgba(0,0,0,0.55);
 }
@@ -265,15 +303,83 @@ body {
 }
 
 /* ================================================================
-   MAIN CONTENT — Cream ruled notepad resting on the desk
+   NOTEPAD WRAPPER — centres the tab-nav + paper unit on the desk
 ================================================================ */
-.main-content {
+.notepad-wrapper {
   flex: 1;
   max-width: var(--paper-width);
   width: 100%;
-  /* Top margin exposes the wood desk between the header and the paper,
-     giving the folder tabs visible space to peek above the page. */
   margin: 48px auto 48px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ================================================================
+   TAB NAVIGATION — Physical manila folder tabs above the paper
+================================================================ */
+.tab-nav {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  /* Indent past the binder holes so tabs start over the paper content */
+  padding-left: 68px;
+  /* No z-index here — we let the tab buttons and the paper compete directly */
+}
+
+.tab-btn {
+  font-family: var(--font-typewriter);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  border-radius: 6px 6px 0 0;
+  border: 1.5px solid var(--color-paper-border);
+  border-bottom: none;
+  padding: 9px 18px 11px;
+  cursor: pointer;
+  position: relative;
+  /* Inactive tabs sit at z-index 1 so the paper (z-index 2) can overlap their bottom edge */
+  z-index: 1;
+  /* Slight drop to leave the paper's top edge dominant for inactive tabs */
+  margin-bottom: -1.5px;
+  transition: filter var(--transition-fast), transform var(--transition-fast),
+              box-shadow var(--transition-fast);
+  box-shadow: -2px -2px 5px rgba(0,0,0,0.08), 2px -2px 5px rgba(0,0,0,0.06);
+  white-space: nowrap;
+}
+
+/* Individual tab colours — distinct muted office hues */
+.tab-btn--knowledge { background: #f2e8cc; color: #5a3e00; border-color: #c8b478; }
+.tab-btn--weather   { background: #c6ddf0; color: #1a3654; border-color: #7aaac8; }
+.tab-btn--holidays  { background: #c4e0c4; color: #1a4020; border-color: #7ab87a; }
+
+/* ACTIVE TAB — paper-coloured, high z-index, no bottom border → connects to paper */
+.tab-btn.active {
+  background: var(--color-paper);   /* must exactly match .main-content background-color */
+  z-index: 10;                      /* on top of paper (z-index 2) */
+  margin-bottom: -2px;              /* overlap the paper's top border by 2px */
+  box-shadow: -2px -3px 8px rgba(0,0,0,0.12), 2px -3px 8px rgba(0,0,0,0.09);
+}
+
+/* Active tab label colour stays legible */
+.tab-btn--knowledge.active { color: #3a2800; border-color: var(--color-paper-border); }
+.tab-btn--weather.active   { color: #1a3654; border-color: var(--color-paper-border); }
+.tab-btn--holidays.active  { color: #1a4020; border-color: var(--color-paper-border); }
+
+/* Inactive tab hover — lift slightly as if being picked up */
+.tab-btn:not(.active):hover {
+  filter: brightness(1.06);
+  transform: translateY(-2px);
+  box-shadow: -2px -4px 10px rgba(0,0,0,0.14), 2px -4px 10px rgba(0,0,0,0.11);
+  z-index: 3;
+}
+
+/* ================================================================
+   MAIN CONTENT — Cream ruled notepad resting on the desk
+================================================================ */
+.main-content {
+  /* Sizing/centering now owned by .notepad-wrapper */
+  margin: 0;
   padding: var(--space-10) var(--space-8) var(--space-16);
   display: flex;
   flex-direction: column;
@@ -300,37 +406,10 @@ body {
 
   border: 1px solid var(--color-paper-border);
   box-shadow: var(--shadow-paper);
-}
-
-/* ================================================================
-   FOLDER TABS — Coloured card tabs above the paper top edge
-================================================================ */
-.folder-tabs {
-  position: absolute;
-  top: -33px;
-  left: 90px;
-  display: flex;
-  gap: 6px;
-  pointer-events: none;
+  /* z-index: 2 lets the active tab (z-index: 10) sit above and inactive tabs (z-index: 1) sit below */
   z-index: 2;
+  position: relative;
 }
-
-.folder-tab {
-  padding: 7px 18px 5px;
-  border-radius: 5px 5px 0 0;
-  font-family: var(--font-typewriter);
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.92);
-  box-shadow: -1px -2px 5px rgba(0,0,0,0.3),
-               2px -2px 6px rgba(0,0,0,0.22);
-}
-
-.tab-green { background: var(--color-tab-green); }
-.tab-amber { background: var(--color-tab-amber); }
-.tab-navy  { background: var(--color-tab-navy); }
 
 /* ================================================================
    BINDER HOLES — Three punched circles on the left margin
@@ -702,6 +781,27 @@ body {
   scroll-behavior: smooth;
 }
 
+/* Tab-switch divider — appears inside chat thread between conversations */
+.chat-tab-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-2) 0;
+  font-family: var(--font-typewriter);
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #9a8870;
+}
+
+.chat-tab-divider::before,
+.chat-tab-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  border-top: 1px dashed #c8b890;
+}
+
 .chat-msg {
   display: flex;
   max-width: 82%;
@@ -906,6 +1006,50 @@ body {
 .site-footer a:hover { color: var(--color-brass); text-decoration: underline; }
 
 /* ================================================================
+   CONTEXT-AWARE STAMP / DOODLE GRAPHICS
+   Rendered at the bottom of assistant answer bubbles when the
+   response contains a temperature (weather) or holiday reference.
+   Styled to look like a hand-drawn ink doodle or rubber stamp
+   pressed onto the paper.
+================================================================ */
+.answer-stamp {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px dashed #d4c8b8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stamp-graphic {
+  display: block;
+  /* Slightly faded so it reads as an ink impression, not a digital icon */
+  opacity: 0.80;
+}
+
+.stamp-graphic svg {
+  display: block;
+  /* Boost contrast to sharpen the "ink on paper" look */
+  filter: contrast(1.18);
+}
+
+.stamp-label {
+  font-family: var(--font-typewriter);
+  font-size: 0.6rem;
+  color: var(--color-ink-muted);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* Each stamp type gets a distinct tilt so it looks hand-placed */
+.stamp-cold    { transform: rotate(-2.5deg); }
+.stamp-mild    { transform: rotate(1deg);    }
+.stamp-hot     { transform: rotate(-1.5deg); }
+.stamp-holiday { transform: rotate(2deg);    }
+
+/* ================================================================
    RESPONSIVE
 ================================================================ */
 @media (max-width: 640px) {
@@ -917,8 +1061,9 @@ body {
   .nav-badge      { display: none; }
   .visitor-badge  { min-width: unset; }
   .chat-thread    { max-height: 420px; }
-  /* Hide purely decorative physical elements on small screens */
-  .folder-tabs    { display: none; }
+  /* Hide decorative and nav elements on small screens */
+  .tab-nav        { display: none; }
   .binder-holes   { display: none; }
   .paperclip-wrap { display: none; }
+  .notepad-wrapper { margin: 0; }
 }
