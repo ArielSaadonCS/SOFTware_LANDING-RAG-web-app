@@ -22,8 +22,7 @@ Browser
   │         │
   │         ├─► Lambda: Weather          real-time weather data
   │         ├─► Lambda: Upcoming Holidays   company holiday calendar
-  │         ├─► Lambda: Employee Directory  reads employee_directory.json from S3
-  │         └─► Lambda: Currency Exchange   Frankfurter API (live FX rates)
+  │         └─► Lambda: Employee Directory  reads employee_directory.json from S3
   │         │
   │         └─► Fallback: invoke_model → Claude Haiku (general knowledge)
   │
@@ -40,7 +39,7 @@ Browser
 | **Backend** | Python 3.11, Flask |
 | **AI / Agent** | Amazon Bedrock Agent — Claude Haiku 4.5 (`us.anthropic.claude-haiku-4-5-20251001-v1:0`) |
 | **RAG** | Amazon Bedrock Knowledge Base backed by Amazon S3 |
-| **Agent Tools** | 4 AWS Lambda Action Groups (Weather, Holidays, Directory, Currency) |
+| **Agent Tools** | 3 AWS Lambda Action Groups (Weather, Holidays, Directory) |
 | **AWS SDK** | boto3 (`bedrock-agent-runtime`, `bedrock-runtime`) |
 | **Chat History** | SQLite (`data/chat_history.db`) via Python's built-in `sqlite3` |
 | **Frontend** | Vanilla HTML / CSS / JavaScript — skeuomorphic office-desk theme |
@@ -65,10 +64,9 @@ The Bedrock Agent autonomously decides which tool to call based on the user's qu
 | **Weather** | Fetches the current local weather for the requested office city and returns a forecast with clothing recommendations |
 | **Upcoming Holidays** | Checks the official company holiday calendar for the specified region/office and returns upcoming days off and office closures |
 | **Employee Directory** | A custom Python Lambda that reads `employee_directory.json` **directly from the S3 bucket at runtime**, enabling complex structured queries filtered by role, department, location, or name |
-| **Currency Exchange** | Calls the free **Frankfurter API** via `urllib` (no API key required) to convert any amount between currencies — specifically designed to assist new hires completing expense reports |
 
 ### Frontend UI
-- **5 physical folder tabs** — each tab surfaces contextual suggestions and injects a routing hint to the backend (see Context Injection below)
+- **4 topic tabs** — each tab surfaces contextual suggestions and injects a routing hint to the backend (see Context Injection below)
 - **Skeuomorphic office-desk design** — wood-grain desk surface, cream paper notebook, physical binder holes, metallic paperclip, sticky-note suggestion chips, typewriter fonts, and brass nameplate header
 - **Context-aware ink stamps** — the frontend detects temperature values (°C regex) and holiday keywords in agent responses and renders matching hand-drawn SVG doodles inside the answer bubble
 - **Chat history sidebar** — a slide-in filing-cabinet drawer lists all past conversations; clicking any entry re-renders the full thread and resumes Bedrock context for that session
@@ -85,7 +83,6 @@ When the user submits a question, the JavaScript **silently prepends a hidden co
 | Weather & Lunch | `[Context: Weather] ` | Weather Lambda |
 | Upcoming Holidays | `[Context: Holidays] ` | Holidays Lambda |
 | Employee Directory | `[Context: Employee Directory] ` | Directory Lambda (S3) |
-| Expenses & Currency | `[Context: Expenses] ` | Currency Exchange Lambda |
 
 ---
 
@@ -146,7 +143,7 @@ All Markdown documents are stored in an **Amazon S3 bucket** and indexed by an *
 - An AWS account with the following resources provisioned:
   - **Amazon Bedrock Agent** with an alias — note the Agent ID and Alias ID
   - **Amazon Bedrock Knowledge Base** attached to the agent, backed by an S3 bucket containing the files in `data/`
-  - **4 Lambda Action Groups** configured on the agent (Weather, Holidays, Employee Directory, Currency Exchange)
+  - **3 Lambda Action Groups** configured on the agent (Weather, Holidays, Employee Directory)
   - **Amazon Bedrock Guardrails** applied to the agent alias
   - IAM user or role with `bedrock-agent-runtime:InvokeAgent` and `bedrock-runtime:InvokeModel` permissions
 - AWS credentials (Access Key ID + Secret Access Key)
