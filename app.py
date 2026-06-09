@@ -14,6 +14,8 @@ Usage:
 import os
 import json
 import secrets
+import sqlite3
+from datetime import datetime, timezone
 from flask import Flask, render_template, request, jsonify, session
 import boto3
 from botocore.exceptions import ClientError, NoCredentialsError
@@ -45,6 +47,81 @@ FALLBACK_TRIGGER = "Sorry, I am unable to assist you with this request."
 
 # Cross-region inference profile used for the direct fallback call to Claude
 FALLBACK_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+
+# SQLite file that stores chat history (persists across restarts)
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "chat_history.db")
+
+# Context prefixes injected by the frontend — stripped before DB storage
+_CONTEXT_PREFIXES = (
+    "[Context: Weather] ",
+    "[Context: Holidays] ",
+    "[Context: Employee Directory] ",
+)
+
+
+# ---------------------------------------------------------------------------
+# Database helpers
+# ---------------------------------------------------------------------------
+
+def strip_context_prefix(text: str) -> str:
+    for prefix in _CONTEXT_PREFIXES:
+        if text.startswith(prefix):
+            return text[len(prefix):]
+    return text
+
+
+def init_db() -> None:
+    con = sqlite3.connect(DB_PATH)
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS sessions (
+            session_id TEXT PRIMARY KEY,
+            title      TEXT NOT NULL DEFAULT 'New Conversation',
+            updated_at TEXT NOT NULL
+        )
+    """)
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS messages (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            role       TEXT NOT NULL,
+            text       TEXT NOT NULL,
+            timestamp  TEXT NOT NULL
+        )
+    """)
+    con.commit()
+    con.close()
+
+
+def save_exchange(session_id: str, display_question: str, answer: str) -> None:
+    """Upsert the session record and append both messages to the DB."""
+    now = datetime.now(timezone.utc).isoformat()
+    con = sqlite3.connect(DB_PATH)
+    cur = con.cursor()
+    exists = cur.execute(
+        "SELECT 1 FROM sessions WHERE session_id = ?", (session_id,)
+    ).fetchone()
+    if exists is None:
+        cur.execute(
+            "INSERT INTO sessions (session_id, title, updated_at) VALUES (?, ?, ?)",
+            (session_id, display_question[:40], now),
+        )
+    else:
+        cur.execute(
+            "UPDATE sessions SET updated_at = ? WHERE session_id = ?", (now, session_id)
+        )
+    cur.execute(
+        "INSERT INTO messages (session_id, role, text, timestamp) VALUES (?, 'user', ?, ?)",
+        (session_id, display_question, now),
+    )
+    cur.execute(
+        "INSERT INTO messages (session_id, role, text, timestamp) VALUES (?, 'agent', ?, ?)",
+        (session_id, answer, now),
+    )
+    con.commit()
+    con.close()
+
+
+init_db()
 
 
 # ---------------------------------------------------------------------------
@@ -164,21 +241,21 @@ def index():
 
 
 # ---------------------------------------------------------------------------
-# Route: POST /ask  — query the Bedrock Knowledge Base
+# Route: POST /ask  — query the Bedrock Agent
 # ---------------------------------------------------------------------------
 @app.route("/ask", methods=["POST"])
 def ask():
     """
-    Accepts a JSON body: { "question": "..." }
-    Calls Bedrock retrieve_and_generate and returns:
-      { "answer": "...", "citations": [...], "error": null }
+    Accepts a JSON body: { "question": "...", "session_id": "..." (optional) }
+    Returns: { "answer": "...", "citations": [...], "session_id": "...", "error": null }
+
+    If session_id is supplied the frontend resumes a specific past conversation;
+    otherwise the current Flask session is used (or a fresh one is generated).
     """
 
-    # Guard: verify the Agent is configured before making any AWS call
     if not AGENT_ID or not AGENT_ALIAS_ID:
         return jsonify({
-            "answer": None,
-            "citations": [],
+            "answer": None, "citations": [], "session_id": None,
             "error": (
                 "Bedrock Agent is not configured. "
                 "Please set AGENT_ID and AGENT_ALIAS_ID in your .env file, "
@@ -186,31 +263,27 @@ def ask():
             ),
         }), 503
 
-    # Parse and validate the request body
     body = request.get_json(silent=True)
     if not body or not body.get("question", "").strip():
         return jsonify({
-            "answer": None,
-            "citations": [],
+            "answer": None, "citations": [], "session_id": None,
             "error": "Please enter a question before submitting.",
         }), 400
 
-    question = body["question"].strip()
+    question          = body["question"].strip()
+    client_session_id = body.get("session_id")  # optional — resumes a past conversation
 
-    # Call the Bedrock Agent via invoke_agent
     try:
         client = get_bedrock_client()
 
-        # Session management for invoke_agent is different from retrieve_and_generate:
-        # WE create the session ID ourselves and pass it on every call.
-        # Bedrock stores the conversation history against this ID on its side.
-        bedrock_session_id = session.get("bedrock_session_id")
-        if not bedrock_session_id:
-            # First message in this conversation — generate a fresh session ID
-            bedrock_session_id = secrets.token_hex(16)
-            session["bedrock_session_id"] = bedrock_session_id
+        # Priority: client-supplied > Flask session > brand-new
+        bedrock_session_id = (
+            client_session_id
+            or session.get("bedrock_session_id")
+            or secrets.token_hex(16)
+        )
+        session["bedrock_session_id"] = bedrock_session_id
 
-        # invoke_agent returns a streaming EventStream — do NOT await it
         response = client.invoke_agent(
             agentId=AGENT_ID,
             agentAliasId=AGENT_ALIAS_ID,
@@ -218,52 +291,47 @@ def ask():
             inputText=question,
         )
 
-        # Walk the stream: assemble the full answer text and collect citations
         answer, citations = parse_agent_response(response)
 
-        # An empty response is treated the same as "unable to assist"
         if not answer:
             answer = FALLBACK_TRIGGER
 
-        # If the Agent found no relevant document, fall back to general Claude knowledge
         if answer.strip() == FALLBACK_TRIGGER:
             fallback_answer = call_general_knowledge_fallback(question)
+            save_exchange(bedrock_session_id, strip_context_prefix(question), fallback_answer)
             return jsonify({
-                "answer":    fallback_answer,
-                "citations": [{"source": "General Knowledge", "uri": "", "snippet": ""}],
-                "error":     None,
+                "answer":     fallback_answer,
+                "citations":  [{"source": "General Knowledge", "uri": "", "snippet": ""}],
+                "session_id": bedrock_session_id,
+                "error":      None,
             })
 
+        save_exchange(bedrock_session_id, strip_context_prefix(question), answer)
         return jsonify({
-            "answer":    answer,
-            "citations": citations,
-            "error":     None,
+            "answer":     answer,
+            "citations":  citations,
+            "session_id": bedrock_session_id,
+            "error":      None,
         })
 
-    # Handle AWS-specific errors
     except ClientError as e:
         code    = e.response["Error"]["Code"]
         message = e.response["Error"]["Message"]
         return jsonify({
-            "answer":    None,
-            "citations": [],
-            "error":     f"AWS Error [{code}]: {message}",
+            "answer": None, "citations": [], "session_id": None,
+            "error": f"AWS Error [{code}]: {message}",
         }), 500
 
-    # Handle missing or invalid credentials
     except NoCredentialsError:
         return jsonify({
-            "answer":    None,
-            "citations": [],
-            "error":     "AWS credentials are missing or invalid. Check your .env file.",
+            "answer": None, "citations": [], "session_id": None,
+            "error": "AWS credentials are missing or invalid. Check your .env file.",
         }), 500
 
-    # Catch-all for unexpected errors
     except Exception as e:
         return jsonify({
-            "answer":    None,
-            "citations": [],
-            "error":     f"Unexpected error: {str(e)}",
+            "answer": None, "citations": [], "session_id": None,
+            "error": f"Unexpected error: {str(e)}",
         }), 500
 
 
@@ -275,6 +343,37 @@ def new_chat():
     """Remove the stored Bedrock session ID so the next /ask starts a fresh conversation."""
     session.pop("bedrock_session_id", None)
     return jsonify({"status": "ok"})
+
+
+# ---------------------------------------------------------------------------
+# Route: GET /chats  — list all past sessions
+# ---------------------------------------------------------------------------
+@app.route("/chats", methods=["GET"])
+def get_chats():
+    """Return up to 50 past sessions ordered by most-recent activity."""
+    con = sqlite3.connect(DB_PATH)
+    con.row_factory = sqlite3.Row
+    rows = con.execute(
+        "SELECT session_id, title, updated_at FROM sessions ORDER BY updated_at DESC LIMIT 50"
+    ).fetchall()
+    con.close()
+    return jsonify([dict(r) for r in rows])
+
+
+# ---------------------------------------------------------------------------
+# Route: GET /chats/<session_id>  — full message history for one session
+# ---------------------------------------------------------------------------
+@app.route("/chats/<session_id>", methods=["GET"])
+def get_chat_messages(session_id):
+    """Return all messages for the requested session in chronological order."""
+    con = sqlite3.connect(DB_PATH)
+    con.row_factory = sqlite3.Row
+    rows = con.execute(
+        "SELECT role, text, timestamp FROM messages WHERE session_id = ? ORDER BY id ASC",
+        (session_id,),
+    ).fetchall()
+    con.close()
+    return jsonify([dict(r) for r in rows])
 
 
 # ---------------------------------------------------------------------------

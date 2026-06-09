@@ -59,9 +59,9 @@
   --space-16: 64px;
 
   /* Layout */
-  --paper-width:      780px;
+  --paper-width:      1600px;
   /* Height of the sticky logo banner — used to offset the header's sticky top */
-  --logo-banner-height: 74px;
+  --logo-banner-height: 40px;
   --radius-sm:    4px;
   --radius-md:    8px;
   --radius-full:  9999px;
@@ -96,8 +96,13 @@ body {
   -webkit-font-smoothing: antialiased;
 
   /* Layered wood-grain gradients */
-  background-color: var(--color-wood-mid);
+  background-color: #7a5438;
   background-image:
+    /* Soft light veil to lift the overall brightness */
+    linear-gradient(
+      rgba(255,255,255,0.18),
+      rgba(255,255,255,0.18)
+    ),
     /* Fine vertical grain lines */
     repeating-linear-gradient(
       93deg,
@@ -111,7 +116,7 @@ body {
     repeating-linear-gradient(
       88deg,
       transparent 0, transparent 28px,
-      rgba(0,0,0,0.055) 28px, rgba(0,0,0,0.055) 33px,
+      rgba(0,0,0,0.04) 28px, rgba(0,0,0,0.04) 33px,
       transparent 33px, transparent 58px,
       rgba(255,180,80,0.018) 58px, rgba(255,180,80,0.018) 61px,
       transparent 61px, transparent 85px
@@ -119,9 +124,9 @@ body {
     /* Radial desk-lamp warm centre */
     radial-gradient(
       ellipse 70% 55% at 50% 25%,
-      #5a3d28 0%,
-      #3d2b1f 55%,
-      #2e1e12 100%
+      #a07550 0%,
+      #7a5438 55%,
+      #5a3c28 100%
     );
 }
 
@@ -131,8 +136,7 @@ body {
 .logo-banner {
   background: linear-gradient(180deg, #2c1c10 0%, #1a0c06 100%);
   border-bottom: 3px solid var(--color-brass-dark);
-  /* Taller padding gives the large text room to breathe */
-  padding: 20px 24px;
+  padding: 7px 24px;
   min-height: var(--logo-banner-height);
   text-align: center;
   /* Stick to the top — always visible while scrolling */
@@ -146,8 +150,7 @@ body {
 
 .logo-text {
   font-family: var(--font-typewriter);
-  /* ~85 % larger than original 1 rem */
-  font-size: 1.85rem;
+  font-size: 1.25rem;
   letter-spacing: 0.28em;
   text-transform: uppercase;
   margin: 0;
@@ -206,7 +209,7 @@ body {
 .header-inner {
   max-width: var(--paper-width);
   margin: 0 auto;
-  padding: var(--space-4) var(--space-6);
+  padding: var(--space-2) var(--space-6);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -222,8 +225,8 @@ body {
 
 .brand-logo {
   position: relative;
-  width: 44px;
-  height: 54px;
+  width: 60px;
+  height: 72px;
   background: var(--color-paper);
   border-radius: var(--radius-sm);
   display: flex;
@@ -238,11 +241,11 @@ body {
 .brand-logo::before {
   content: '';
   position: absolute;
-  top: -7px;
+  top: -9px;
   left: 50%;
   transform: translateX(-50%);
-  width: 10px;
-  height: 10px;
+  width: 14px;
+  height: 14px;
   background: #2c1c10;
   border: 2px solid var(--color-brass);
   border-radius: 50%;
@@ -250,7 +253,7 @@ body {
 
 .brand-logo-text {
   font-family: var(--font-typewriter);
-  font-size: 0.7rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: #2c1c10;
   letter-spacing: 0.05em;
@@ -259,7 +262,7 @@ body {
 }
 
 .brand-logo-sub {
-  font-size: 0.4rem;
+  font-size: 0.52rem;
   font-weight: 700;
   color: var(--color-brass-dark);
   letter-spacing: 0.08em;
@@ -308,8 +311,8 @@ body {
 .notepad-wrapper {
   flex: 1;
   max-width: var(--paper-width);
-  width: 100%;
-  margin: 48px auto 48px;
+  width: 95vw;
+  margin: 12px auto 12px;
   display: flex;
   flex-direction: column;
 }
@@ -335,7 +338,7 @@ body {
   border-radius: 6px 6px 0 0;
   border: 1.5px solid var(--color-paper-border);
   border-bottom: none;
-  padding: 9px 18px 11px;
+  padding: 9px 11px 11px;
   cursor: pointer;
   position: relative;
   /* Inactive tabs sit at z-index 1 so the paper (z-index 2) can overlap their bottom edge */
@@ -352,6 +355,8 @@ body {
 .tab-btn--knowledge { background: #f2e8cc; color: #5a3e00; border-color: #c8b478; }
 .tab-btn--weather   { background: #c6ddf0; color: #1a3654; border-color: #7aaac8; }
 .tab-btn--holidays  { background: #c4e0c4; color: #1a4020; border-color: #7ab87a; }
+.tab-btn--directory { background: #ead8ea; color: #3d1050; border-color: #b888c0; }
+.tab-btn--expenses  { background: #d8ead8; color: #1a3a1a; border-color: #78b878; }
 
 /* ACTIVE TAB — paper-coloured, high z-index, no bottom border → connects to paper */
 .tab-btn.active {
@@ -365,6 +370,8 @@ body {
 .tab-btn--knowledge.active { color: #3a2800; border-color: var(--color-paper-border); }
 .tab-btn--weather.active   { color: #1a3654; border-color: var(--color-paper-border); }
 .tab-btn--holidays.active  { color: #1a4020; border-color: var(--color-paper-border); }
+.tab-btn--directory.active { color: #3d1050; border-color: var(--color-paper-border); }
+.tab-btn--expenses.active  { color: #1a3a1a; border-color: var(--color-paper-border); }
 
 /* Inactive tab hover — lift slightly as if being picked up */
 .tab-btn:not(.active):hover {
@@ -380,13 +387,13 @@ body {
 .main-content {
   /* Sizing/centering now owned by .notepad-wrapper */
   margin: 0;
-  padding: var(--space-10) var(--space-8) var(--space-16);
+  padding: var(--space-5) var(--space-8) var(--space-5);
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
   position: relative;
 
-  /* Paper: cream base + red left-margin line + blue horizontal rules */
+  /* Paper: cream base + red left-margin line (blank page — no ruled lines) */
   background-color: var(--color-paper);
   background-image:
     linear-gradient(
@@ -395,13 +402,6 @@ body {
       rgba(210,100,100,0.50) 62px,
       rgba(210,100,100,0.50) 63.5px,
       transparent 63.5px
-    ),
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0px,
-      transparent 27px,
-      var(--color-paper-line) 27px,
-      var(--color-paper-line) 28.5px
     );
 
   border: 1px solid var(--color-paper-border);
@@ -537,7 +537,7 @@ body {
 
 .hero-title {
   font-family: var(--font-typewriter);
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--color-ink);
   letter-spacing: -0.01em;
@@ -545,10 +545,10 @@ body {
 }
 
 .hero-subtitle {
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   color: var(--color-ink-secondary);
-  max-width: 500px;
-  line-height: 1.75;
+  max-width: 700px;
+  line-height: 1.55;
 }
 
 /* ================================================================
@@ -557,7 +557,7 @@ body {
 .suggestions {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
   align-items: center;
 }
 
@@ -587,7 +587,7 @@ body {
   border: none;
   border-top: 3px solid rgba(0,0,0,0.07);
   border-radius: 2px;
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-1) var(--space-3);
   cursor: pointer;
   box-shadow: var(--shadow-note);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
@@ -636,7 +636,7 @@ body {
 }
 
 .ask-card-inner {
-  padding: var(--space-6);
+  padding: var(--space-4);
 }
 
 .card-title {
@@ -646,28 +646,21 @@ body {
   color: var(--color-ink-secondary);
   text-transform: uppercase;
   letter-spacing: 0.10em;
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-2);
 }
 
-/* Textarea with ruled lines — legal pad style */
+/* Textarea — blank page style */
 .question-input {
   font-family: var(--font-body);
   font-size: 0.9375rem;
   color: var(--color-ink);
   background-color: var(--color-paper);
-  background-image: repeating-linear-gradient(
-    transparent,
-    transparent 27px,
-    #c5d0d8 27px,
-    #c5d0d8 28px
-  );
-  background-attachment: local;
   border: 1.5px solid var(--color-paper-border);
   border-radius: var(--radius-sm);
   padding: var(--space-4);
   width: 100%;
   resize: vertical;
-  min-height: 96px;
+  min-height: 70px;
   line-height: 1.75;
   outline: none;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
@@ -742,26 +735,34 @@ body {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* New Conversation — understated text button */
+/* New Conversation — prominent wooden-stamp button */
 .new-chat-btn {
   font-family: var(--font-typewriter);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: var(--color-ink-secondary);
-  background: transparent;
-  border: 1.5px solid var(--color-paper-border);
+  color: var(--color-brass-light);
+  background: var(--color-wood-mid);
+  border: 2.5px solid var(--color-brass-dark);
   border-radius: var(--radius-sm);
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-3) var(--space-6);
   cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.30), inset 0 1px 0 rgba(200,168,75,0.15);
   transition: all var(--transition-fast);
 }
 
 .new-chat-btn:hover {
-  color: var(--color-error);
-  border-color: var(--color-error);
-  background: var(--color-error-bg);
+  background: var(--color-wood-light);
+  border-color: var(--color-brass);
+  color: var(--color-brass-light);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.35), inset 0 1px 0 rgba(200,168,75,0.20);
+  transform: translateY(-1px);
+}
+
+.new-chat-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25), inset 0 1px 0 rgba(200,168,75,0.10);
 }
 
 /* ================================================================
@@ -1050,10 +1051,154 @@ body {
 .stamp-holiday { transform: rotate(2deg);    }
 
 /* ================================================================
+   CHAT HISTORY SIDEBAR — Filing-cabinet drawer
+================================================================ */
+
+/* Slide-over panel */
+.history-sidebar {
+  position: fixed;
+  top: 0;
+  left: -300px;
+  width: 280px;
+  height: 100vh;
+  background: linear-gradient(180deg, #2c1c10 0%, #1a0c06 100%);
+  border-right: 3px solid var(--color-brass-dark);
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  transition: left 0.28s ease;
+  box-shadow: 4px 0 24px rgba(0,0,0,0.55);
+}
+
+.history-sidebar.open { left: 0; }
+
+/* Semi-transparent backdrop */
+.history-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 499;
+}
+.history-backdrop.visible { display: block; }
+
+/* Sidebar header bar */
+.history-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 2px solid var(--color-brass-dark);
+  background: rgba(200,168,75,0.08);
+  flex-shrink: 0;
+}
+
+.history-sidebar-title {
+  font-family: var(--font-typewriter);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--color-brass-light);
+}
+
+.history-close-btn {
+  background: none;
+  border: none;
+  color: var(--color-brass);
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast);
+}
+.history-close-btn:hover { color: var(--color-brass-light); }
+
+/* Scrollable conversation list */
+.history-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-2);
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-brass-dark) transparent;
+}
+.history-list::-webkit-scrollbar       { width: 5px; }
+.history-list::-webkit-scrollbar-thumb { background: var(--color-brass-dark); border-radius: 3px; }
+
+/* Individual conversation entry — looks like an index-card tab */
+.history-item {
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-1);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(200,168,75,0.18);
+  border-left: 3px solid var(--color-brass-dark);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-left-color var(--transition-fast);
+}
+.history-item:hover  { background: rgba(200,168,75,0.14); border-left-color: var(--color-brass); }
+.history-item.active { background: rgba(200,168,75,0.20); border-left-color: var(--color-brass-light); }
+
+.history-item-title {
+  font-family: var(--font-typewriter);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-brass-light);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.history-item-time {
+  font-size: 0.62rem;
+  color: rgba(200,168,75,0.45);
+  margin-top: 3px;
+}
+
+/* Empty / error state */
+.history-empty {
+  font-family: var(--font-typewriter);
+  font-size: 0.72rem;
+  color: rgba(200,168,75,0.38);
+  text-align: center;
+  padding: var(--space-8) var(--space-4);
+  line-height: 1.7;
+}
+
+/* History toggle button in the header */
+.history-toggle-btn {
+  font-family: var(--font-typewriter);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-wood-dark);
+  background: linear-gradient(180deg, var(--color-brass-light) 0%, var(--color-brass) 100%);
+  border: 2px solid var(--color-brass-dark);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.25);
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+.history-toggle-btn:hover {
+  background: linear-gradient(180deg, #fff0a0 0%, var(--color-brass-light) 100%);
+  border-color: var(--color-brass);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.30);
+  transform: translateY(-1px);
+}
+.history-toggle-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+
+/* ================================================================
    RESPONSIVE
 ================================================================ */
 @media (max-width: 640px) {
-  .main-content   { margin: 0; padding: var(--space-8) var(--space-4) var(--space-12); }
+  .main-content   { margin: 0; padding: var(--space-6) var(--space-4) var(--space-8); }
   .hero-title     { font-size: 1.5rem; }
   .form-footer    { flex-direction: column; align-items: stretch; }
   .submit-btn     { width: 100%; justify-content: center; }
@@ -1066,4 +1211,8 @@ body {
   .binder-holes   { display: none; }
   .paperclip-wrap { display: none; }
   .notepad-wrapper { margin: 0; }
+}
+
+@media (max-width: 1140px) {
+  .notepad-wrapper { margin: 8px var(--space-3) 8px; }
 }

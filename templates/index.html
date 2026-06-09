@@ -33,6 +33,9 @@
         </div>
       </div>
       <nav class="header-nav">
+        <button id="history-toggle-btn" class="history-toggle-btn" title="Chat History">
+          &#x1F4D3; Chat History
+        </button>
         <span class="nav-badge">&#x1F4CB; Powered by AWS Bedrock</span>
       </nav>
     </div>
@@ -53,6 +56,12 @@
       <button class="tab-btn tab-btn--holidays"
               role="tab" aria-selected="false"
               data-tab="holidays">Upcoming Holidays</button>
+      <button class="tab-btn tab-btn--directory"
+              role="tab" aria-selected="false"
+              data-tab="directory">Employee Directory</button>
+      <button class="tab-btn tab-btn--expenses"
+              role="tab" aria-selected="false"
+              data-tab="expenses">Expenses &amp; Currency</button>
     </nav>
 
   <main class="main-content">
@@ -188,6 +197,20 @@
   </footer>
 
   <!-- ============================================================
+       CHAT HISTORY SIDEBAR — Filing cabinet drawer on the left
+  ============================================================ -->
+  <aside id="history-sidebar" class="history-sidebar" aria-label="Chat History">
+    <div class="history-sidebar-header">
+      <span class="history-sidebar-title">&#x1F4D3; Chat History</span>
+      <button id="history-close-btn" class="history-close-btn" aria-label="Close">&#x2715;</button>
+    </div>
+    <div id="history-list" class="history-list">
+      <p class="history-empty">Loading…</p>
+    </div>
+  </aside>
+  <div id="history-backdrop" class="history-backdrop"></div>
+
+  <!-- ============================================================
        JAVASCRIPT
        Simple, step-by-step logic — no libraries or complex state.
   ============================================================ -->
@@ -201,23 +224,41 @@
     const chatThread    = document.getElementById("chat-thread");
     const newChatBtn    = document.getElementById("new-chat-btn");
 
+    // ---- Chat History State ----
+    let activeSessionId = null;
+
+    // ---- History Sidebar Refs ----
+    const historySidebar   = document.getElementById("history-sidebar");
+    const historyBackdrop  = document.getElementById("history-backdrop");
+    const historyList      = document.getElementById("history-list");
+    const historyToggleBtn = document.getElementById("history-toggle-btn");
+    const historyCloseBtn  = document.getElementById("history-close-btn");
+
     // ---- Folder Tab Navigation ----
     let currentActiveTab = 'knowledge';
     const TAB_CONTEXT_PREFIX = {
       knowledge: '',
       weather:   '[Context: Weather] ',
       holidays:  '[Context: Holidays] ',
+      directory: '[Context: Employee Directory] ',
+      expenses:  '[Context: Expenses] ',
     };
     const TAB_LABEL = {
       knowledge: 'Knowledge Base',
       weather:   'Weather & Lunch',
       holidays:  'Upcoming Holidays',
+      directory: 'Employee Directory',
+      expenses:  'Expenses & Currency',
     };
 
     // ---- Dynamic home page content per tab ----
+    const DEFAULT_PLACEHOLDER = "e.g. What is the parental leave policy in Germany?";
+    const LOCATION_PLACEHOLDER = "Ask a question… (please include your office location, e.g. London)";
+
     const TAB_CONTENT = {
       knowledge: {
         intro: "Ask any question about your onboarding, HR policies, IT setup, office access, or company culture — and get an instant answer sourced directly from official TechCorp documentation.",
+        placeholder: DEFAULT_PLACEHOLDER,
         chips: [
           { label: "🔒 VPN Setup",        q: "How do I connect to the VPN on my first day?" },
           { label: "🌴 Vacation Policy",   q: "What is the vacation policy for US employees?" },
@@ -231,19 +272,41 @@
       },
       weather: {
         intro: "Check today's local forecast to plan your commute, get office clothing recommendations based on the temperature, and explore nearby lunch options.",
+        placeholder: LOCATION_PLACEHOLDER,
         chips: [
-          { label: "☀️ Today's Weather",             q: "What is the weather like today?" },
-          { label: "🧥 Do I need a coat?",           q: "Do I need a coat today based on the temperature?" },
-          { label: "🍔 Lunch spots near the office", q: "What are good lunch spots near the office?" },
-          { label: "☕ Best local coffee",                 q: "What are the best local coffee shops near the office?" },
+          { label: "☀️ Weather – SF",              q: "What is the weather like today in the San Francisco office?" },
+          { label: "🧥 Coat needed – London?",     q: "Do I need a coat today based on the temperature in London?" },
+          { label: "🍔 Lunch spots – Singapore",   q: "What are good lunch spots near the Singapore office?" },
+          { label: "☕ Best coffee – Warsaw",       q: "What are the best local coffee shops near the Warsaw office?" },
         ],
       },
       holidays: {
         intro: "Stay informed about upcoming regional holidays, company-wide days off, and office closures to plan your schedule.",
+        placeholder: LOCATION_PLACEHOLDER,
         chips: [
-          { label: "📅 Next company holiday",                        q: "What is the next company holiday?" },
-          { label: "🏖️ Next long weekend",                     q: "When is the next long weekend?" },
-          { label: "🎉 Is the office open during the next holiday?", q: "Is the office open during the next upcoming holiday?" },
+          { label: "📅 Next holiday – London",                         q: "What is the next company holiday in the London office?" },
+          { label: "🏖️ Next long weekend – SF",                       q: "When is the next long weekend in San Francisco?" },
+          { label: "🎉 Office open – Singapore?",                      q: "Is the Singapore office open during the next upcoming holiday?" },
+          { label: "🗓️ Upcoming holidays – Warsaw",                    q: "What are the upcoming public holidays for the Warsaw office?" },
+        ],
+      },
+      directory: {
+        intro: "Find colleagues across all TechCorp offices. Search by name, department, location, or role to connect with the right person instantly.",
+        placeholder: "Search the directory by role, location, or department…",
+        chips: [
+          { label: "👩‍💻 QA Engineers – London",    q: "Who are the QA engineers in the London office?" },
+          { label: "🏗️ Infrastructure dept",        q: "List all employees in the Infrastructure department" },
+          { label: "🧑‍💼 BE Manager – SF",           q: "Who is the Backend Engineering Manager in San Francisco?" },
+          { label: "👥 Singapore team",             q: "Who works in the Singapore office?" },
+        ],
+      },
+      expenses: {
+        intro: "Convert currencies instantly or calculate the USD equivalent of any work expense. Powered by live exchange rates.",
+        placeholder: "Ask about exchange rates or expense conversions…",
+        chips: [
+          { label: "💷 GBP → USD",   q: "Convert 50 GBP to USD" },
+          { label: "💶 EUR → USD",   q: "Convert 100 EUR to USD" },
+          { label: "🪙 ILS → USD",   q: "I spent 1000 ILS, how much is that in USD?" },
         ],
       },
     };
@@ -256,6 +319,9 @@
 
       // Update the intro paragraph
       heroSubtitle.textContent = content.intro;
+
+      // Update input placeholder
+      questionInput.placeholder = content.placeholder;
 
       // Rebuild chip buttons
       suggestionChips.innerHTML = '';
@@ -316,13 +382,95 @@
     function textToHtml(text) {
       return text
         .split(/\n{2,}/)
-        .map((para) => `<p>${para.replace(/\n/g, "<br>")}</p>`)
+        .map((para) => {
+          const html = para
+            .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+            .replace(/\*(.+?)\*/g, "<em>$1</em>")
+            .replace(/\n/g, "<br>");
+          return `<p>${html}</p>`;
+        })
         .join("");
     }
 
     // ---- Helper: scroll the chat thread to the bottom ----
     function scrollToBottom() {
       chatThread.scrollTop = chatThread.scrollHeight;
+    }
+
+    // ================================================================
+    // CHAT HISTORY SIDEBAR
+    // ================================================================
+
+    function openHistorySidebar() {
+      loadHistorySidebar();
+      historySidebar.classList.add("open");
+      historyBackdrop.classList.add("visible");
+    }
+
+    function closeHistorySidebar() {
+      historySidebar.classList.remove("open");
+      historyBackdrop.classList.remove("visible");
+    }
+
+    historyToggleBtn.addEventListener("click", () => {
+      historySidebar.classList.contains("open") ? closeHistorySidebar() : openHistorySidebar();
+    });
+    historyCloseBtn.addEventListener("click",  closeHistorySidebar);
+    historyBackdrop.addEventListener("click",  closeHistorySidebar);
+
+    async function loadHistorySidebar() {
+      try {
+        const res   = await fetch("/chats");
+        const chats = await res.json();
+        historyList.innerHTML = "";
+        if (chats.length === 0) {
+          historyList.innerHTML = '<p class="history-empty">No conversations yet.<br>Start by asking a question!</p>';
+          return;
+        }
+        chats.forEach((chat) => {
+          const item = document.createElement("div");
+          item.className = "history-item" + (chat.session_id === activeSessionId ? " active" : "");
+          item.dataset.sessionId = chat.session_id;
+          const d = new Date(chat.updated_at);
+          const label = d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })
+                      + " " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+          item.innerHTML = `
+            <div class="history-item-title">${escapeHtml(chat.title)}</div>
+            <div class="history-item-time">${label}</div>`;
+          item.addEventListener("click", () => loadChatSession(chat.session_id));
+          historyList.appendChild(item);
+        });
+      } catch {
+        historyList.innerHTML = '<p class="history-empty">Could not load history.</p>';
+      }
+    }
+
+    async function loadChatSession(sessionId) {
+      closeHistorySidebar();
+      try {
+        const res      = await fetch(`/chats/${sessionId}`);
+        const messages = await res.json();
+
+        chatThread.innerHTML = "";
+        chatThread.hidden    = false;
+        activeSessionId      = sessionId;
+
+        messages.forEach((msg) => {
+          if (msg.role === "user") {
+            appendUserMessage(msg.text);
+          } else {
+            appendAnswerBubble(msg.text, []);
+          }
+        });
+
+        const notice = document.createElement("div");
+        notice.className   = "chat-system-notice";
+        notice.textContent = "— Resumed conversation —";
+        chatThread.appendChild(notice);
+        scrollToBottom();
+      } catch {
+        appendErrorBubble("Could not load the selected conversation.");
+      }
     }
 
     // ================================================================
@@ -687,6 +835,12 @@
       // Ask the server to forget the current Bedrock session ID
       await fetch("/new-chat", { method: "POST" });
 
+      // Reset the frontend session so the next question generates a fresh one
+      activeSessionId = null;
+
+      // Clear the input field so the user starts with a true blank slate
+      questionInput.value = "";
+
       // Clear all messages from the screen
       chatThread.innerHTML = "";
 
@@ -721,10 +875,13 @@
         const response = await fetch("/ask", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question: queryToSend }),
+          body: JSON.stringify({ question: queryToSend, session_id: activeSessionId }),
         });
 
         const data = await response.json();
+
+        // Track the active session so subsequent messages continue the same thread
+        if (data.session_id) activeSessionId = data.session_id;
 
         // Remove the loading bubble before showing the answer
         removeLoadingBubble();
@@ -734,6 +891,8 @@
           appendErrorBubble(data.error);
         } else {
           appendAnswerBubble(data.answer, data.citations);
+          // Keep sidebar list fresh if it's currently open
+          if (historySidebar.classList.contains("open")) loadHistorySidebar();
         }
 
       } catch {

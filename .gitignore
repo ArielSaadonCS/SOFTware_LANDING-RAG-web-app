@@ -2,3 +2,5 @@
 *.pem
 venv/
 __pycache__/
+*.db
+data/chat_history.db
